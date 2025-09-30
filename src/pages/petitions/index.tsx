@@ -1,21 +1,20 @@
 'use client'
-
 import { useState, useEffect } from 'react';
+import { formatDistanceToNow } from 'date-fns';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { CheckCircle2, Users, Calendar, Edit } from 'lucide-react';
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { formatDistanceToNow } from 'date-fns';
-import { CheckCircle2, Users, Calendar, Image as ImageIcon, FileText, Edit } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-const CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3'; // Replace with your deployed contract address
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
 
 const CONTRACT_ABI = [
   {
@@ -140,34 +139,38 @@ export default function Home() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   return (
-    <main className="container mx-auto px-4 py-8">
-        {!isConnected ? (
-          <div className="text-center py-20">
-            <h2 className="text-4xl font-bold mb-4">Welcome to PetitionChain</h2>
-            <p className="text-gray-600 mb-8">Connect your wallet to create and sign petitions</p>
-            <ConnectButton />
-          </div>
-        ) : (
-          <Tabs defaultValue="browse" className="w-full">
-            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
-              <TabsTrigger value="browse">Browse Petitions</TabsTrigger>
-              <TabsTrigger value="create">Create Petition</TabsTrigger>
-            </TabsList>
+    <main className="container min-h-screen mx-auto px-4 py-8">
+      {!isConnected ? (
+        <div className="mx-auto max-w-4xl text-center py-40">
+          <h1 className="mb-6 text-4xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
+            Decentralized Petitions for the{" "}
+            <span className="bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+              Future of Governance
+            </span>
+          </h1>
+          <p className="text-gray-400 mb-8">Connect your wallet to create and sign petitions</p>
+        </div>
+      ) : (
+        <Tabs defaultValue="browse" className="w-full">
+          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
+            <TabsTrigger value="browse">Browse Petitions</TabsTrigger>
+            <TabsTrigger value="create">Create Petition</TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="browse">
-              <PetitionList
-                key={refreshKey}
-                onSelectPetition={setSelectedPetition}
-                userAddress={address}
-              />
-            </TabsContent>
+          <TabsContent value="browse">
+            <PetitionList
+              key={refreshKey}
+              onSelectPetition={setSelectedPetition}
+              userAddress={address}
+            />
+          </TabsContent>
 
-            <TabsContent value="create">
-              <CreatePetitionForm onSuccess={() => setRefreshKey(prev => prev + 1)} />
-            </TabsContent>
-          </Tabs>
-        )}
-      </main>
+          <TabsContent value="create">
+            <CreatePetitionForm onSuccess={() => setRefreshKey(prev => prev + 1)} />
+          </TabsContent>
+        </Tabs>
+      )}
+    </main>
   );
 }
 
@@ -296,9 +299,6 @@ function CreatePetitionForm({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
-// ============================================
-// Petition List Component
-// ============================================
 function PetitionList({ onSelectPetition, userAddress }: { onSelectPetition: (id: number) => void; userAddress?: string }) {
   const { data: totalPetitions } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
@@ -307,6 +307,8 @@ function PetitionList({ onSelectPetition, userAddress }: { onSelectPetition: (id
   });
 
   const total = totalPetitions ? Number(totalPetitions) : 0;
+
+  console.log('Total Petitions:', total);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -328,12 +330,25 @@ function PetitionList({ onSelectPetition, userAddress }: { onSelectPetition: (id
 function PetitionCard({ petitionId, userAddress }: { petitionId: number; userAddress?: string }) {
   const [showDetails, setShowDetails] = useState(false);
 
+  type PetitionData = {
+    id: bigint;
+    owner: string;
+    title: string;
+    description: string;
+    imageUrl: string;
+    startDate: bigint;
+    endDate: bigint;
+    signatureCount: bigint;
+    isActive: boolean;
+    createdAt: bigint;
+  };
+
   const { data: petition } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CONTRACT_ABI,
     functionName: 'getPetition',
     args: [BigInt(petitionId)]
-  });
+  }) as { data: PetitionData | undefined };
 
   const { data: hasSigned } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
@@ -347,7 +362,7 @@ function PetitionCard({ petitionId, userAddress }: { petitionId: number; userAdd
 
   if (!petition) return null;
 
-  const [id, owner, title, description, imageUrl, startDate, endDate, signatureCount, isActive] = petition as any[];
+  const { owner, title, description, imageUrl, startDate, endDate, signatureCount, isActive } = petition;
 
   const handleSign = () => {
     writeContract({
@@ -386,7 +401,7 @@ function PetitionCard({ petitionId, userAddress }: { petitionId: number; userAdd
             <div className="flex gap-2 flex-wrap">
               {isActive && <Badge variant="default">Active</Badge>}
               {hasEnded && <Badge variant="secondary">Ended</Badge>}
-              {hasSigned && <Badge variant="outline">Signed</Badge>}
+              {!!hasSigned && <Badge variant="outline">Signed</Badge>}
               {isOwner && <Badge variant="destructive">Owner</Badge>}
             </div>
           </div>

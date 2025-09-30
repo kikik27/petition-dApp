@@ -1,3 +1,5 @@
+import { Instagram, Twitter, Youtube } from "lucide-react";
+
 const AppFooter = () => {
 
   return (
@@ -20,41 +22,13 @@ const AppFooter = () => {
                 href="#"
                 className="text-gray-400 transition-colors hover:text-white"
               >
-                <img
-                  src="https://placeholder-image-service.onrender.com/image/32x32?prompt=Twitter%20logo%20icon%20with%20blue%20bird&id=social-1"
-                  alt="Twitter social media icon with blue bird logo"
-                  className="h-6 w-6"
-                />
+                <Twitter />
               </a>
               <a
                 href="#"
                 className="text-gray-400 transition-colors hover:text-white"
               >
-                <img
-                  src="https://placeholder-image-service.onrender.com/image/32x32?prompt=Discord%20logo%20icon%20with%20purple%20game%20controller&id=social-2"
-                  alt="Discord social media icon with purple game controller logo"
-                  className="h-6 w-6"
-                />
-              </a>
-              <a
-                href="#"
-                className="text-gray-400 transition-colors hover:text-white"
-              >
-                <img
-                  src="https://placeholder-image-service.onrender.com/image/32x32?prompt=GitHub%20logo%20icon%20with%20black%20cat&id=social-3"
-                  alt="GitHub social media icon with black cat logo"
-                  className="h-6 w-6"
-                />
-              </a>
-              <a
-                href="#"
-                className="text-gray-400 transition-colors hover:text-white"
-              >
-                <img
-                  src="https://placeholder-image-service.onrender.com/image/32x32?prompt=Telegram%20logo%20icon%20with%20blue%20paper%20airplane&id=social-4"
-                  alt="Telegram social media icon with blue paper airplane logo"
-                  className="h-6 w-6"
-                />
+                <Instagram />
               </a>
             </div>
           </div>

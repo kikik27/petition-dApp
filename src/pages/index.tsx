@@ -106,7 +106,7 @@ export default function DeAppsVoteLanding() {
 
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 lg:py-32">
+      <section className="relative overflow-hidden min-h-screen py-20 lg:py-32">
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -left-40 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl"></div>
@@ -130,7 +130,7 @@ export default function DeAppsVoteLanding() {
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Button
                 onClick={() => {
-                  router.push('/vote');
+                  router.push('/petitions');
                 }}
                 size="lg"
                 className="bg-gradient-to-r from-cyan-600 to-purple-600 px-8 py-3 text-white hover:from-cyan-700 hover:to-purple-700"
@@ -231,17 +231,10 @@ export default function DeAppsVoteLanding() {
                 </h3>
                 <p className="text-gray-400">{step.description}</p>
                 {index < steps.length - 1 && (
-                  <div className="absolute right-0 top-8 hidden h-0.5 w-full translate-x-1/2 bg-gray-700 lg:block"></div>
+                  <div className="absolute left-14 top-8 hidden h-0.5 w-60 translate-x-1/2 bg-gray-700 lg:block"></div>
                 )}
               </div>
             ))}
-          </div>
-
-          <div className="mt-12 text-center">
-            <Button className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 hover:to-purple-700">
-              See Detailed Guide
-              <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
           </div>
         </div>
       </section>
