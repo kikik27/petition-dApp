@@ -267,7 +267,7 @@ export default function DeAppsVoteLanding() {
                     ))}
                   </div>
                   <blockquote className="mb-4 leading-relaxed text-gray-300">
-                    "{testimonial.content}"
+                    {testimonial.content}
                   </blockquote>
                   <div className="border-t border-gray-800 pt-4">
                     <div className="font-semibold text-white">
