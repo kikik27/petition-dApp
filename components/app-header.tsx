@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Menu, X } from "lucide-react";
 import router from "next/router";
+import Image from "next/image";
 
 const AppHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -94,10 +95,11 @@ const AppHeader = () => {
                                   }}
                                 >
                                   {chain.iconUrl && (
-                                    <img
+                                    <Image
                                       alt={chain.name ?? 'Chain icon'}
                                       src={chain.iconUrl}
-                                      style={{ width: 12, height: 12 }}
+                                      width={12}
+                                      height={12}
                                     />
                                   )}
                                 </div>
@@ -210,7 +212,7 @@ const AppHeader = () => {
                                       }}
                                     >
                                       {chain.iconUrl && (
-                                        <img
+                                        <Image
                                           alt={chain.name ?? 'Chain icon'}
                                           src={chain.iconUrl}
                                           style={{ width: 12, height: 12 }}
