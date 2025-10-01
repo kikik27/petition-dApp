@@ -13,6 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ConnectButton } from '@rainbow-me/rainbowkit/dist/components/ConnectButton/ConnectButton';
+import Image from 'next/image';
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
 
@@ -149,6 +151,100 @@ export default function Home() {
             </span>
           </h1>
           <p className="text-gray-400 mb-8">Connect your wallet to create and sign petitions</p>
+          <ConnectButton.Custom>
+            {
+              ({
+                account,
+                chain,
+                openAccountModal,
+                openChainModal,
+                openConnectModal,
+                authenticationStatus,
+                mounted,
+              }) => {
+                // Note: If your app doesn't use authentication, you
+                // can remove all 'authenticationStatus' checks
+                const ready = mounted && authenticationStatus !== 'loading';
+                const connected =
+                  ready &&
+                  account &&
+                  chain &&
+                  (!authenticationStatus ||
+                    authenticationStatus === 'authenticated');
+
+                return (
+                  <div
+                    {...(!ready && {
+                      'aria-hidden': true,
+                      'style': {
+                        opacity: 0,
+                        pointerEvents: 'none',
+                        userSelect: 'none',
+                      },
+                    })}
+                  >
+                    {(() => {
+                      if (!connected) {
+                        return (
+                          <Button className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 hover:to-purple-700" onClick={openConnectModal} type="button">
+                            Connect Wallet
+                          </Button>
+                        );
+                      }
+
+                      if (chain.unsupported) {
+                        return (
+                          <Button className="bg-red-600 text-white hover:bg-red-700" onClick={openChainModal} type="button">
+                            Wrong network
+                          </Button>
+                        );
+                      }
+
+                      return (
+                        <div style={{ display: 'flex', gap: 12 }}>
+                          <Button
+                            className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 hover:to-purple-700"
+                            onClick={openChainModal}
+                            style={{ display: 'flex', alignItems: 'center' }}
+                            type="button"
+                          >
+                            {chain.hasIcon && (
+                              <div
+                                style={{
+                                  background: chain.iconBackground,
+                                  width: 12,
+                                  height: 12,
+                                  borderRadius: 999,
+                                  overflow: 'hidden',
+                                  marginRight: 4,
+                                }}
+                              >
+                                {chain.iconUrl && (
+                                  <Image
+                                    alt={chain.name ?? 'Chain icon'}
+                                    src={chain.iconUrl}
+                                    width={12}
+                                    height={12}
+                                  />
+                                )}
+                              </div>
+                            )}
+                            {chain.name}
+                          </Button>
+
+                          <Button className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 hover:to-purple-700" onClick={openAccountModal} type="button">
+                            {account.displayName}
+                            {account.displayBalance
+                              ? ` (${account.displayBalance})`
+                              : ''}
+                          </Button>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                );
+              }}
+          </ConnectButton.Custom>
         </div>
       ) : (
         <Tabs defaultValue="browse" className="w-full">

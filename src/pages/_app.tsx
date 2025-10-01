@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cookieStorage, createStorage, WagmiProvider } from 'wagmi';
 import { darkTheme, getDefaultConfig, RainbowKitProvider } from '@rainbow-me/rainbowkit';
 
-import { hardhat, mainnet } from 'wagmi/chains';
+import { hardhat } from 'wagmi/chains';
 import AppHeader from '@/components/app-header';
 import AppFooter from '@/components/app-footer';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -26,26 +26,25 @@ function MyApp({ Component, pageProps }: AppProps) {
   });
 
   return (
-        <WagmiProvider config={config}>
-          <QueryClientProvider client={client}>
-            <RainbowKitProvider appInfo={{
-              appName: 'Mandat',
-              learnMoreUrl: 'https://learnaboutcryptowallets.example',
-            }} theme={darkTheme()} showRecentTransactions={true} modalSize="compact">
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="dark"
-                enableSystem
-                disableTransitionOnChange>
-                <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 text-foreground">
-                  <AppHeader />
-                  <Component {...pageProps} />
-                  <AppFooter />
-                </div>
-              </ThemeProvider>
-            </RainbowKitProvider>
-          </QueryClientProvider>
-        </WagmiProvider>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={client}>
+        <RainbowKitProvider appInfo={{
+          appName: 'Mandat',
+        }} theme={darkTheme()} showRecentTransactions={true} modalSize="compact">
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange>
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 text-foreground">
+              <AppHeader />
+              <Component {...pageProps} />
+              <AppFooter />
+            </div>
+          </ThemeProvider>
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }
 

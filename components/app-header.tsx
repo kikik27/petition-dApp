@@ -120,9 +120,6 @@ const AppHeader = () => {
                   );
                 }}
             </ConnectButton.Custom>
-            {/* <Button className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 hover:to-purple-700">
-                Launch App
-              </Button> */}
           </div>
 
           {/* Mobile menu button */}
