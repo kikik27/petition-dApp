@@ -11,23 +11,16 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-  Menu,
-  X,
   ArrowRight,
-  CheckCircle,
-  Vote,
   Shield,
   Lock,
   Globe,
   Zap,
   Users,
-  BarChart3,
   Clock,
   Star,
   MessageCircle,
-  ChevronRight,
 } from "lucide-react";
-import { ConnectButton, WalletButton } from "@rainbow-me/rainbowkit";
 import router from "next/router";
 
 export default function DeAppsVoteLanding() {

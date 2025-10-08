@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cookieStorage, createStorage, WagmiProvider } from 'wagmi';
 import { darkTheme, getDefaultConfig, RainbowKitProvider } from '@rainbow-me/rainbowkit';
 
-import { hardhat } from 'wagmi/chains';
+import { sepolia } from 'wagmi/chains';
 import AppHeader from '@/components/app-header';
 import AppFooter from '@/components/app-footer';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -21,7 +21,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     }),
     appName: 'Mandat',
     projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
-    chains: [hardhat],
+    chains: [sepolia],
     ssr: true
   });
 

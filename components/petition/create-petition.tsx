@@ -76,46 +76,72 @@ const CreatePetitionForm = ({ onSuccess }: { onSuccess: () => void }) => {
         <form className="space-y-4" onSubmit={formData.handleSubmit(handleSubmit)}>
           <CardContent className="space-y-4">
 
-            <CustomField 
-            primary 
-            name="title" 
-            label="Title"
-            control={formData.control} 
-            render={({ field }) => (
-              <Input
-                {...field}
-                placeholder="Enter petition title"
-              />
-            )} 
+            <CustomField
+              primary
+              name="title"
+              label="Title"
+              control={formData.control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  placeholder="Enter petition title"
+                />
+              )}
             />
 
-            <CustomField 
-            name="description" 
-            label="Description"
-            control={formData.control} 
-            render={({ field }) => (
-              <Textarea
-                {...field}
-                placeholder="Describe your petition in detail"
-                rows={5}
-              />
-            )} 
+            <CustomField
+              primary
+              name="description"
+              label="Description"
+              control={formData.control}
+              render={({ field }) => (
+                <Textarea
+                  {...field}
+                  placeholder="Describe your petition in detail"
+                  rows={5}
+                />
+              )}
             />
 
-            <CustomField 
-            name="imageUrl" 
-            label="Image URL"
-            control={formData.control} 
-            render={({ field }) => (
-              <Input
-                {...field}
-                type="url"
-                placeholder="https://example.com/image.jpg"
-              />
-            )} 
+            <CustomField
+              primary
+              name="imageUrl"
+              label="Image URL"
+              control={formData.control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="url"
+                  placeholder="https://example.com/image.jpg"
+                />
+              )}
             />
 
-            
+            <CustomField
+              primary
+              name="startDate"
+              label="Start Date"
+              control={formData.control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="date"
+                />
+              )}
+            />
+
+            <CustomField
+              primary
+              name="endDate"
+              label="End Date"
+              control={formData.control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  type="date"
+                />
+              )}
+            />
 
 
             {/* <div className="space-y-2">
@@ -141,28 +167,7 @@ const CreatePetitionForm = ({ onSuccess }: { onSuccess: () => void }) => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date</Label>
-              <Input
-                id="startDate"
-                type="datetime-local"
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="endDate">End Date</Label>
-              <Input
-                id="endDate"
-                type="datetime-local"
-                value={formData.endDate}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                required
-              />
-            </div>
+          
           </div> */}
 
 
