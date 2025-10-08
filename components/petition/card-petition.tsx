@@ -64,7 +64,7 @@ const CardPetition = ({ petitionId, userAddress }: { petitionId: number; userAdd
       <Card className="hover:shadow-lg transition-shadow">
         <CardHeader>
           {imageUrl && (
-            <Image src={imageUrl} alt={title} className="w-full h-48 object-cover rounded-t-lg mb-4" />
+            <Image src={imageUrl} alt={title} width={500} height={200} className="w-full h-48 object-cover rounded-t-lg mb-4" />
           )}
           <CardTitle className="line-clamp-2">{title}</CardTitle>
           <CardDescription className="line-clamp-3">{description}</CardDescription>
