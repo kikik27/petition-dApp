@@ -41,6 +41,7 @@ const CreatePetitionForm = ({ onSuccess }: { onSuccess: () => void }) => {
     if (isSuccess) {
       formData.reset();
       onSuccess();
+      
     }
   }, [isSuccess, onSuccess, formData]);
 
@@ -166,8 +167,6 @@ const CreatePetitionForm = ({ onSuccess }: { onSuccess: () => void }) => {
 
           
           </div> */}
-
-
           </CardContent>
           <CardFooter>
             <Button type="submit" className="w-full" disabled={isPending}>
