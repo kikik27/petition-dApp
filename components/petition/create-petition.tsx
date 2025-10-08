@@ -64,7 +64,7 @@ const CreatePetitionForm = ({ onSuccess }: { onSuccess: () => void }) => {
   };
 
   return (
-    <Card className="max-w-2xl mx-auto">
+    <Card className="max-w-2xl mx-auto hover:shadow-lg transition-shadow bg-black/10">
       <CardHeader>
         <CardTitle>Create New Petition</CardTitle>
         <CardDescription>Start a petition and gather support for your cause</CardDescription>

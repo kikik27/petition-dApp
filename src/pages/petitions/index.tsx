@@ -6,7 +6,6 @@ import { Edit } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Image from 'next/image';
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/constant';
@@ -173,79 +172,3 @@ function PetitionList({ onSelectPetition, userAddress }: { onSelectPetition: (id
   );
 }
 
-function PetitionDetailsDialog({
-  open,
-  onClose,
-  petitionId,
-  isOwner
-}: {
-  open: boolean;
-  onClose: () => void;
-  petitionId: number;
-  isOwner: boolean;
-}) {
-  const { data: signers } = useReadContract({
-    address: CONTRACT_ADDRESS as `0x${string}`,
-    abi: CONTRACT_ABI,
-    functionName: 'getSigners',
-    args: [BigInt(petitionId)],
-    query: { enabled: open }
-  });
-
-  const { data: updateLogs } = useReadContract({
-    address: CONTRACT_ADDRESS as `0x${string}`,
-    abi: CONTRACT_ABI,
-    functionName: 'getUpdateLogs',
-    args: [BigInt(petitionId)],
-    query: { enabled: open }
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Petition Details</DialogTitle>
-        </DialogHeader>
-
-        <Tabs defaultValue="signers" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="signers">Signers ({(signers as any[])?.length || 0})</TabsTrigger>
-            <TabsTrigger value="updates">Update Logs ({(updateLogs as any[])?.length || 0})</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="signers" className="space-y-2 max-h-96 overflow-y-auto">
-            {(signers as any[])?.map((signer, idx) => (
-              <div key={idx} className="p-3 bg-gray-50 rounded-lg font-mono text-sm">
-                {signer}
-              </div>
-            ))}
-            {(!signers || (signers as any[]).length === 0) && (
-              <p className="text-center text-gray-500 py-8">No signatures yet</p>
-            )}
-          </TabsContent>
-
-          <TabsContent value="updates" className="space-y-2 max-h-96 overflow-y-auto">
-            {(updateLogs as any[])?.map((log, idx) => (
-              <div key={idx} className="p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Edit className="h-4 w-4" />
-                  <span className="font-semibold">{log.fieldUpdated}</span>
-                  <span className="text-xs text-gray-500">
-                    {new Date(Number(log.timestamp) * 1000).toLocaleString()}
-                  </span>
-                </div>
-                <div className="text-sm space-y-1">
-                  <p className="text-gray-600">From: <span className="text-red-600">{log.oldValue}</span></p>
-                  <p className="text-gray-600">To: <span className="text-green-600">{log.newValue}</span></p>
-                </div>
-              </div>
-            ))}
-            {(!updateLogs || (updateLogs as any[]).length === 0) && (
-              <p className="text-center text-gray-500 py-8">No updates yet</p>
-            )}
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
-  );
-}
