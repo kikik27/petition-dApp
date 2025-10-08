@@ -6,6 +6,7 @@ import { Button } from "../ui/button";
 import { Calendar, Users } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { formatDistanceToNow } from "date-fns";
+import Image from "next/image";
 
 const CardPetition = ({ petitionId, userAddress }: { petitionId: number; userAddress?: string }) => {
   const [showDetails, setShowDetails] = useState(false);
@@ -63,7 +64,7 @@ const CardPetition = ({ petitionId, userAddress }: { petitionId: number; userAdd
       <Card className="hover:shadow-lg transition-shadow">
         <CardHeader>
           {imageUrl && (
-            <img src={imageUrl} alt={title} className="w-full h-48 object-cover rounded-t-lg mb-4" />
+            <Image src={imageUrl} alt={title} className="w-full h-48 object-cover rounded-t-lg mb-4" />
           )}
           <CardTitle className="line-clamp-2">{title}</CardTitle>
           <CardDescription className="line-clamp-3">{description}</CardDescription>

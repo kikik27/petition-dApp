@@ -2,11 +2,8 @@ import { CONTRACT_ABI, CONTRACT_ADDRESS } from "@/constant";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
-import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
-import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
-import { CheckCircle2 } from "lucide-react";
 import * as z from "zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -45,7 +42,7 @@ const CreatePetitionForm = ({ onSuccess }: { onSuccess: () => void }) => {
       formData.reset();
       onSuccess();
     }
-  }, [isSuccess, onSuccess]);
+  }, [isSuccess, onSuccess, formData]);
 
   const handleSubmit = (formData: FormData) => {
 
