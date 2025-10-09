@@ -232,7 +232,7 @@ function PetitionDetailsDialog({
           <DialogTitle>Petition Details</DialogTitle>
         </DialogHeader>
 
-        {isOwner && (<Form {...formData} >
+        {/* {isOwner && (<Form {...formData} >
           <form className="space-y-4" onSubmit={formData.handleSubmit(handleUpdatePetition)}>
             <CardContent className="space-y-4">
 
@@ -310,7 +310,7 @@ function PetitionDetailsDialog({
               </Button>
             </CardFooter>
           </form>
-        </Form>)}
+        </Form>)} */}
 
         <Tabs defaultValue="signers" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
