@@ -10,6 +10,8 @@ import { sepolia } from 'wagmi/chains';
 import AppHeader from '@/components/app-header';
 import AppFooter from '@/components/app-footer';
 import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 
 const client = new QueryClient();
 
@@ -40,6 +42,7 @@ function MyApp({ Component, pageProps }: AppProps) {
               <AppHeader />
               <Component {...pageProps} />
               <AppFooter />
+              <Toaster />
             </div>
           </ThemeProvider>
         </RainbowKitProvider>

@@ -1,14 +1,25 @@
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from "@/constant";
-import { useState } from "react";
-import { useReadContract, useWriteContract } from "wagmi";
+import { use, useEffect, useState } from "react";
+import { useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
-import { Button } from "../ui/button";
 import { Calendar, Edit, Users } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Image from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+
+import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
+import { Button } from "../ui/button";
+import * as z from "zod";
+import { useForm } from "react-hook-form";
+import { Form } from "../ui/form";
+import { CustomField } from "../ui/form-field";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from "sonner";
+import { form } from "viem/chains";
 
 const CardPetition = ({ petitionId, userAddress }: { petitionId: number; userAddress?: string }) => {
   const [showDetails, setShowDetails] = useState(false);
@@ -66,10 +77,10 @@ const CardPetition = ({ petitionId, userAddress }: { petitionId: number; userAdd
       <Card className="hover:shadow-lg transition-shadow bg-black/10">
         <CardHeader>
           {imageUrl && (
-            <Image src={imageUrl} alt={title} width={500} height={200} className="w-full h-48 object-cover rounded-t-lg mb-4" />
+            <Image src={imageUrl} alt={title} width={200} height={200} className="w-full h-48 object-cover rounded-t-lg mb-4" />
           )}
-          <CardTitle className="line-clamp-2">{title}</CardTitle>
-          <CardDescription className="line-clamp-3">{description}</CardDescription>
+          <CardTitle className="line-clamp-1">{title}</CardTitle>
+          <CardDescription className="line-clamp-1">{description}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -82,7 +93,7 @@ const CardPetition = ({ petitionId, userAddress }: { petitionId: number; userAdd
               <span>Ends {formatDistanceToNow(new Date(Number(endDate) * 1000), { addSuffix: true })}</span>
             </div>
             <div className="flex gap-2 flex-wrap">
-              {isActive && <Badge variant="default">Active</Badge>}
+              {isActive && !hasEnded && <Badge variant="default">Active</Badge>}
               {hasEnded && <Badge variant="secondary">Ended</Badge>}
               {!!hasSigned && <Badge variant="outline">Signed</Badge>}
               {isOwner && <Badge variant="destructive">Owner</Badge>}
@@ -93,10 +104,23 @@ const CardPetition = ({ petitionId, userAddress }: { petitionId: number; userAdd
           <Button
             className="flex-1"
             onClick={handleSign}
-            disabled={isPending || !!hasSigned || !isActive || !hasStarted || hasEnded}
+            disabled={
+              isPending ||
+              !!hasSigned ||
+              !isActive ||
+              !hasStarted ||
+              hasEnded
+            }
           >
-            {hasSigned ? 'Already Signed' : isPending ? 'Signing...' : 'Sign Petition'}
+            {(() => {
+              if (hasEnded) return 'Petition Ended';
+              if (!hasStarted) return 'Not Started Yet';
+              if (!isActive) return 'Inactive Petition';
+              if (hasSigned) return 'Already Signed';
+              return isPending ? 'Signing...' : 'Sign Petition';
+            })()}
           </Button>
+
           <Button variant="outline" onClick={() => setShowDetails(true)}>
             Details
           </Button>
@@ -108,6 +132,7 @@ const CardPetition = ({ petitionId, userAddress }: { petitionId: number; userAdd
         onClose={() => setShowDetails(false)}
         petitionId={petitionId}
         isOwner={isOwner}
+        petition={petition}
       />
     </>
   );
@@ -117,13 +142,16 @@ function PetitionDetailsDialog({
   open,
   onClose,
   petitionId,
-  isOwner
+  isOwner,
+  petition,
 }: {
   open: boolean;
   onClose: () => void;
   petitionId: number;
   isOwner: boolean;
+  petition: any;
 }) {
+
   const { data: signers } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CONTRACT_ABI,
@@ -140,12 +168,149 @@ function PetitionDetailsDialog({
     query: { enabled: open }
   });
 
+  const { writeContract: writeUpdate, isPending: isUpdating, data: hash } = useWriteContract();
+  const { isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  const Formschema = z.object({
+    title: z.string().max(100, "Title must be at most 100 characters").nonempty("Title is required"),
+    description: z.string().min(20, "Description must be at least 20 characters").max(2000, "Description must be at most 2000 characters").nonempty("Description is required"),
+    imageUrl: z.string().url("Must be a valid URL").nonempty("Image URL is required"),
+    startDate: z.string().refine((date) => !isNaN(Date.parse(date)), { message: "Invalid start date" }).nonempty("Start date is required"),
+    endDate: z.string().refine((date) => !isNaN(Date.parse(date)), { message: "Invalid end date" }).nonempty("End date is required")
+  });
+
+  type FormData = z.infer<typeof Formschema>;
+
+  const formData = useForm<FormData>({
+    resolver: zodResolver(Formschema),
+    defaultValues: {
+      title: '',
+      description: '',
+      imageUrl: '',
+      startDate: '',
+      endDate: ''
+    }
+  });
+
+  const handleUpdatePetition = async (formData: FormData) => {
+    try {
+      writeUpdate({
+        address: CONTRACT_ADDRESS as `0x${string}`,
+        abi: CONTRACT_ABI,
+        functionName: "updateTitle",
+        args: [BigInt(petitionId), formData.title],
+      });
+
+    } catch (error: any) {
+      toast.error("Failed to update petition", {
+        description: error?.message || "Transaction failed",
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (open) {
+      formData.setValue('title', petition?.title || '');
+      formData.setValue('description', petition?.description || '');
+      formData.setValue('imageUrl', petition?.imageUrl || '');
+      formData.setValue('startDate', petition ? new Date(Number(petition.startDate) * 1000).toISOString().split('T')[0] : '');
+      formData.setValue('endDate', petition ? new Date(Number(petition.endDate) * 1000).toISOString().split('T')[0] : '');
+      // Fetch additional data or perform actions when the dialog opens
+    }
+
+    if (isSuccess) {
+      toast.success("Petition updated successfully", {
+        description: `Updated petition details.`,
+      });
+    }
+  }, [open, isSuccess]);
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Petition Details</DialogTitle>
         </DialogHeader>
+
+        {isOwner && (<Form {...formData} >
+          <form className="space-y-4" onSubmit={formData.handleSubmit(handleUpdatePetition)}>
+            <CardContent className="space-y-4">
+
+              <CustomField
+                primary
+                name="title"
+                label="Title"
+                control={formData.control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder="Enter petition title"
+                  />
+                )}
+              />
+
+              <CustomField
+                primary
+                name="description"
+                label="Description"
+                control={formData.control}
+                render={({ field }) => (
+                  <Textarea
+                    {...field}
+                    placeholder="Describe your petition in detail"
+                    rows={5}
+                  />
+                )}
+              />
+
+              <CustomField
+                primary
+                name="imageUrl"
+                label="Image URL"
+                control={formData.control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    type="url"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                )}
+              />
+
+              <CustomField
+                primary
+                name="startDate"
+                label="Start Date"
+                control={formData.control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    type="date"
+                  />
+                )}
+              />
+
+              <CustomField
+                primary
+                name="endDate"
+                label="End Date"
+                control={formData.control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    type="date"
+                  />
+                )}
+              />
+
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" className="w-full" disabled={isUpdating}>
+                {isUpdating ? 'Updating...' : 'Update Petition'}
+              </Button>
+            </CardFooter>
+          </form>
+        </Form>)}
 
         <Tabs defaultValue="signers" className="w-full">
           <TabsList className="grid w-full grid-cols-2">

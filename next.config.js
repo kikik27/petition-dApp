@@ -10,7 +10,12 @@ const nextConfig = {
     return config;
   },
   images: {
-    domains: ['ipfs.infura.io', 'images.unsplash.com', 'ipfs.io', 'cdn.kemenag.go.id'],
+    remotePatterns: [
+      {
+        protocol: "https", // or https
+        hostname: "*", // Allow all hostnames
+      },
+    ],
   },
 };
 

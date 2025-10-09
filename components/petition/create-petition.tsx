@@ -10,6 +10,7 @@ import { useForm } from "react-hook-form";
 import { Form } from "../ui/form";
 import { CustomField } from "../ui/form-field";
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from "sonner";
 
 const CreatePetitionForm = ({ onSuccess }: { onSuccess: () => void }) => {
 
@@ -41,9 +42,11 @@ const CreatePetitionForm = ({ onSuccess }: { onSuccess: () => void }) => {
     if (isSuccess) {
       formData.reset();
       onSuccess();
-      
+      toast.success("Petition has been created", {
+        description: "Your petition is now live on the blockchain.",
+      });
     }
-  }, [isSuccess, onSuccess, formData]);
+  }, [isSuccess]);
 
   const handleSubmit = (formData: FormData) => {
 
@@ -141,32 +144,6 @@ const CreatePetitionForm = ({ onSuccess }: { onSuccess: () => void }) => {
               )}
             />
 
-
-            {/* <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="Describe your petition in detail"
-              rows={5}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="imageUrl">Image URL</Label>
-            <Input
-              id="imageUrl"
-              type="url"
-              placeholder="https://example.com/image.jpg"
-              value={formData.imageUrl}
-              onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-            />
-          </div>
-
-          
-          </div> */}
           </CardContent>
           <CardFooter>
             <Button type="submit" className="w-full" disabled={isPending}>
