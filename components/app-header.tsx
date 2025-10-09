@@ -16,11 +16,12 @@ const AppHeader = () => {
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">
               {/* <Vote className="h-8 w-8 text-primary mr-2" /> */}
-              <h1 onClick={() => {
+              <Image src="/image/logo.png" alt="Logo" width={40} height={40} />
+                <span onClick={() => {
                 router.push("/")
-              }} className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
+                }} className="text-xl font-bold ml-2 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent cursor-pointer">
                 Mandat
-              </h1>
+                </span>
             </div>
           </div>
 
