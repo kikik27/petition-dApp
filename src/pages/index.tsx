@@ -95,11 +95,8 @@ export default function DeAppsVoteLanding() {
 
   return (
     <div >
-      {/* Header */}
-
-
       {/* Hero Section */}
-      <section className="relative overflow-hidden min-h-screen py-20 lg:py-32">
+      <section className="relative overflow-hidden py-20 lg:py-32">
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -left-40 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl"></div>
@@ -223,9 +220,7 @@ export default function DeAppsVoteLanding() {
                   {step.title}
                 </h3>
                 <p className="text-gray-400">{step.description}</p>
-                {index < steps.length - 1 && (
-                  <div className="absolute left-14 top-8 hidden h-0.5 w-60 translate-x-1/2 bg-gray-700 lg:block"></div>
-                )}
+                
               </div>
             ))}
           </div>

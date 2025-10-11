@@ -1,23 +1,8 @@
 "use client";
 
-import * as animation from "@/public/Crypto-Wallet.json";
-import { useLottie } from "lottie-react";
+import animation from "@/public/Crypto-Wallet.json";
+import Lottie from "lottie-react";
 
-const CryptoWalletLottie = () => {
-  const defaultOptions = {
-    animationData: animation,
-    loop: true,
-  };
-
-  const { View } = useLottie(defaultOptions);
-
-  return (
-    <>
-      <div className="">
-        <div className="w-full">{View}</div>
-      </div>
-    </>
-  );
-};
+const CryptoWalletLottie = () => <Lottie width={40} height={40} animationData={animation} loop={true} />;
 
 export default CryptoWalletLottie;

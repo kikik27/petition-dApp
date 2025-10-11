@@ -1,31 +1,31 @@
 'use client'
 import { useState } from 'react';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useReadContract } from 'wagmi';
 
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Image from 'next/image';
-import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/constant';
+import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/constants';
 import CardPetition from '@/components/petition/card-petition';
 import CreatePetitionForm from '@/components/petition/create-petition';
 
 export default function Home() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, isConnecting, isReconnecting } = useAccount();
   const [selectedPetition, setSelectedPetition] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   return (
-    <main className="container min-h-screen mx-auto px-4 py-8">
+    <main className="min-h-screen mx-auto flex justify-center items-center">
       {!isConnected ? (
-        <div className="mx-auto max-w-4xl text-center py-40">
+        <div className="mx-auto max-w-4xl text-center items-center py-40">
           <h1 className="mb-6 text-4xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
             Decentralized Petitions for the{" "}
             <span className="bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
               Future of Governance
             </span>
           </h1>
-          <p className="text-gray-400 mb-8">Connect your wallet to create and sign petitions</p>
+          <p className="text-gray-300 mb-8">Connect your wallet to create and sign petitions</p>
           <ConnectButton.Custom>
             {
               ({
@@ -37,8 +37,6 @@ export default function Home() {
                 authenticationStatus,
                 mounted,
               }) => {
-                // Note: If your app doesn't use authentication, you
-                // can remove all 'authenticationStatus' checks
                 const ready = mounted && authenticationStatus !== 'loading';
                 const connected =
                   ready &&
@@ -120,6 +118,7 @@ export default function Home() {
                 );
               }}
           </ConnectButton.Custom>
+
         </div>
       ) : (
         <Tabs defaultValue="browse" className="w-full">
