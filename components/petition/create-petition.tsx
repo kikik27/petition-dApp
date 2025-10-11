@@ -1,4 +1,4 @@
-import { CONTRACT_ABI, CONTRACT_ADDRESS } from "@/constanta";
+import { CONTRACT_ABI, CONTRACT_ADDRESS } from "@/constants";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
