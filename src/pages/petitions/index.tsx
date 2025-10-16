@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAccount, useReadContract } from 'wagmi';
 
 import { Button } from '@/components/ui/button';
@@ -9,11 +9,21 @@ import Image from 'next/image';
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/constants';
 import CardPetition from '@/components/petition/card-petition';
 import CreatePetitionForm from '@/components/petition/create-petition';
+import useTheme from '@/stores/theme';
 
 export default function Home() {
+  const { setLoading } = useTheme();
   const { address, isConnected, isConnecting, isReconnecting } = useAccount();
   const [selectedPetition, setSelectedPetition] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    if (isConnecting || isReconnecting) {
+      setLoading(true);
+    } else {
+      setLoading(false);
+    }
+  }, [isConnecting, isReconnecting, setLoading])
 
   return (
     <main className="min-h-screen mx-auto flex justify-center items-center">
@@ -121,7 +131,7 @@ export default function Home() {
 
         </div>
       ) : (
-        <Tabs defaultValue="browse" className="w-full">
+        <Tabs defaultValue="browse" className="w-full py-6">
           <TabsList className="grid bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 w-full max-w-md mx-auto grid-cols-2 mb-8">
             <TabsTrigger value="browse">Browse Petitions</TabsTrigger>
             <TabsTrigger value="create">Create Petition</TabsTrigger>
@@ -145,18 +155,26 @@ export default function Home() {
 }
 
 function PetitionList({ onSelectPetition, userAddress }: { onSelectPetition: (id: number) => void; userAddress?: string }) {
-  const { data: totalPetitions } = useReadContract({
+  const { data: totalPetitions, isLoading, isSuccess, isError } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
     abi: CONTRACT_ABI,
     functionName: 'getTotalPetitions'
   });
 
+  const { setLoading } = useTheme()
+
+  useEffect(() => {
+    if (isLoading) {
+      setLoading(true)
+    } else if (isSuccess) {
+      setLoading(false)
+    }
+  }, [isLoading, isSuccess, setLoading])
+
   const total = totalPetitions ? Number(totalPetitions) : 0;
 
-  console.log('Total Petitions:', total);
-
   return (
-    <div className="grid grid-cols-1 w-full md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 w-full max-w-5xl mx-auto md:grid-cols-2 lg:grid-cols-3 gap-6">
       {Array.from({ length: total }, (_, i) => (
         <CardPetition key={i} petitionId={i} userAddress={userAddress} />
       ))}
