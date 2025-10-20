@@ -8,14 +8,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider } from 'wagmi';
 import { darkTheme, RainbowKitProvider } from '@rainbow-me/rainbowkit';
 
-import { sepolia } from 'wagmi/chains';
 import AppHeader from '@/components/app-header';
 import AppFooter from '@/components/app-footer';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import CryptoWalletLottie from '@/components/lottie/crypto-wallet-lottie';
 import useTheme from '@/stores/theme';
-import { wagmiConfig } from '@/lib/wagmi';
+import { wagmiConfig } from '@/lib/wagmi-config';
 
 const client = new QueryClient();
 
@@ -35,7 +34,7 @@ export const metadata: Metadata = {
 };
 
 function MyApp({ Component, pageProps }: AppProps) {
-  const { isLoading } = useTheme();
+  const { isLoading, loadingMessage, loadingDescription } = useTheme();
 
   return (
     <>
@@ -54,17 +53,27 @@ function MyApp({ Component, pageProps }: AppProps) {
               enableSystem
               disableTransitionOnChange>
 
-                <main className={isLoading ? 'min-h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 text-foreground' : `min-h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 text-foreground`}>
+              <main
+                className='min-h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 text-foreground'                    >
                 {isLoading && (
                   <>
-                  <style jsx global>{`
-                    body {
-                    overflow: hidden;
-                    }
-                  `}</style>
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900/80 via-gray-950/80 to-gray-900/80 z-[99999] fixed">
-                    <CryptoWalletLottie />
-                  </div>
+                    <style jsx global>{`
+        body {
+          overflow: hidden;
+        }
+      `}</style>
+
+                    <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-gradient-to-br from-gray-900/90 via-gray-950/90 to-gray-900/90 backdrop-blur-sm">
+                      <CryptoWalletLottie />
+                      <div className="mt-6 text-center">
+                        <h1 className="text-xl font-semibold text-white animate-pulse tracking-wide">
+                          {loadingMessage || 'Processing...'}
+                        </h1>
+                        <p className="text-gray-400 mt-2 text-sm">
+                          {loadingDescription || 'Please wait while we complete your request.'}
+                        </p>
+                      </div>
+                    </div>
                   </>
                 )}
 
@@ -72,8 +81,7 @@ function MyApp({ Component, pageProps }: AppProps) {
                 <Component {...pageProps} />
                 <AppFooter />
                 <Toaster />
-
-                </main>
+              </main>
 
             </ThemeProvider>
           </RainbowKitProvider>

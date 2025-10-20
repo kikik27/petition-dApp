@@ -1,20 +1,19 @@
 'use client'
 import { useEffect, useState } from 'react';
-import { useAccount, useReadContract } from 'wagmi';
+import { useAccount } from 'wagmi';
+import Image from 'next/image';
+import useTheme from '@/stores/theme';
 
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import Image from 'next/image';
-import { CONTRACT_ABI, CONTRACT_ADDRESS } from '@/constants';
-import CardPetition from '@/components/petition/card-petition';
-import CreatePetitionForm from '@/components/petition/create-petition';
-import useTheme from '@/stores/theme';
+import CreatePetitionFormV2 from '@/components/petition/create-petitionV2';
+import { usePetitionStore } from '@/stores/petition'
+import { CardPetition } from '@/components/petition/card-petition';
 
 export default function Home() {
   const { setLoading } = useTheme();
-  const { address, isConnected, isConnecting, isReconnecting } = useAccount();
-  const [selectedPetition, setSelectedPetition] = useState<number | null>(null);
+  const { isConnected, isConnecting, isReconnecting } = useAccount();
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -35,100 +34,7 @@ export default function Home() {
               Future of Governance
             </span>
           </h1>
-          <p className="text-gray-300 mb-8">Connect your wallet to create and sign petitions</p>
-          <ConnectButton.Custom>
-            {
-              ({
-                account,
-                chain,
-                openAccountModal,
-                openChainModal,
-                openConnectModal,
-                authenticationStatus,
-                mounted,
-              }) => {
-                const ready = mounted && authenticationStatus !== 'loading';
-                const connected =
-                  ready &&
-                  account &&
-                  chain &&
-                  (!authenticationStatus ||
-                    authenticationStatus === 'authenticated');
-
-                return (
-                  <div
-                    {...(!ready && {
-                      'aria-hidden': true,
-                      'style': {
-                        opacity: 0,
-                        pointerEvents: 'none',
-                        userSelect: 'none',
-                      },
-                    })}
-                  >
-                    {(() => {
-                      if (!connected) {
-                        return (
-                          <Button className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 hover:to-purple-700" onClick={openConnectModal} type="button">
-                            Connect Wallet
-                          </Button>
-                        );
-                      }
-
-                      if (chain.unsupported) {
-                        return (
-                          <Button className="bg-red-600 text-white hover:bg-red-700" onClick={openChainModal} type="button">
-                            Wrong network
-                          </Button>
-                        );
-                      }
-
-                      return (
-                        <div style={{ display: 'flex', gap: 12 }}>
-                          <Button
-                            className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 hover:to-purple-700"
-                            onClick={openChainModal}
-                            style={{ display: 'flex', alignItems: 'center' }}
-                            type="button"
-                          >
-                            {chain.hasIcon && (
-                              <div
-                                style={{
-                                  background: chain.iconBackground,
-                                  width: 12,
-                                  height: 12,
-                                  borderRadius: 999,
-                                  overflow: 'hidden',
-                                  marginRight: 4,
-                                }}
-                              >
-                                {chain.iconUrl && (
-                                  <Image
-                                    alt={chain.name ?? 'Chain icon'}
-                                    src={chain.iconUrl}
-                                    width={12}
-                                    height={12}
-                                  />
-                                )}
-                              </div>
-                            )}
-                            {chain.name}
-                          </Button>
-
-                          <Button className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 hover:to-purple-700" onClick={openAccountModal} type="button">
-                            {account.displayName}
-                            {account.displayBalance
-                              ? ` (${account.displayBalance})`
-                              : ''}
-                          </Button>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                );
-              }}
-          </ConnectButton.Custom>
-
+          <p className="text-gray-300 mb-8">Please connect your wallet to create and sign petitions !</p>
         </div>
       ) : (
         <Tabs defaultValue="browse" className="w-full py-6">
@@ -139,14 +45,11 @@ export default function Home() {
 
           <TabsContent value="browse">
             <PetitionList
-              key={refreshKey}
-              onSelectPetition={setSelectedPetition}
-              userAddress={address}
             />
           </TabsContent>
 
           <TabsContent value="create">
-            <CreatePetitionForm onSuccess={() => setRefreshKey(prev => prev + 1)} />
+            <CreatePetitionFormV2 onSuccess={() => setRefreshKey(prev => prev + 1)} />
           </TabsContent>
         </Tabs>
       )}
@@ -154,36 +57,40 @@ export default function Home() {
   );
 }
 
-function PetitionList({ onSelectPetition, userAddress }: { onSelectPetition: (id: number) => void; userAddress?: string }) {
-  const { data: totalPetitions, isLoading, isSuccess, isError } = useReadContract({
-    address: CONTRACT_ADDRESS as `0x${string}`,
-    abi: CONTRACT_ABI,
-    functionName: 'getTotalPetitions'
-  });
-
-  const { setLoading } = useTheme()
+function PetitionList() {
+  const { petitions, loading, error, fetchPetitions } = usePetitionStore();
+  const { setLoading, setLoadingMessage, setLoadingDescription } = useTheme();
 
   useEffect(() => {
-    if (isLoading) {
-      setLoading(true)
-    } else if (isSuccess) {
-      setLoading(false)
+    fetchPetitions();
+  }, [fetchPetitions]);
+
+  useEffect(() => {
+    if (loading) {
+      setLoading(true);
+      setLoadingMessage("Fetching petitions...");
+      setLoadingDescription("Please wait while we load petitions from the blockchain.");
+    } else {
+      setLoading(false);
     }
-  }, [isLoading, isSuccess, setLoading])
+  }, [loading, setLoading, setLoadingMessage, setLoadingDescription]);
 
-  const total = totalPetitions ? Number(totalPetitions) : 0;
+ useEffect(() => {
+    if (error) {
+      setLoading(true);
+      setLoadingMessage("⚠️ Error loading petitions");
+      setLoadingDescription(error);
+    }
+  }, [error, setLoading, setLoadingMessage, setLoadingDescription]);
 
-  return (
-    <div className="grid grid-cols-1 w-full max-w-5xl mx-auto md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {Array.from({ length: total }, (_, i) => (
-        <CardPetition key={i} petitionId={i} userAddress={userAddress} />
-      ))}
-      {total === 0 && (
-        <div className="col-span-full h-screen text-center py-20 text-gray-400">
-          No petitions yet. Be the first to create one!
-        </div>
-      )}
+  // === Render UI ===
+  if (loading) return null; // biar loading handled oleh Theme
+  if (error && !petitions.length) return null; // biar error modal tampil dari Theme
+
+  return (<div className="grid md:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-6 p-6">
+      {petitions.map((petition) => {
+        return <CardPetition key={petition.tokenId} petition={petition} />;
+      })}
     </div>
   );
 }
-
