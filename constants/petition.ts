@@ -1,8 +1,28 @@
-import ConntractABI from "@/abi/petitionV2.json"
+import CIVIX_ABI from "@/abi/civicToken.json";
+import BADGE_ABI from "@/abi/supportBadge.json";
+import PETITION_ABI from "@/abi/petitionNFT.json";
+
+import PETITION_ABI_OLD from "@/abi/petitionV2.json";
+
 import { Globe2, HeartHandshake, Megaphone, AlertTriangle } from "lucide-react";
 
 export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
-export const CONTRACT_ABI_V2 = ConntractABI.abi;
+export const CONTRACT_ABI_V2 = PETITION_ABI_OLD.abi;
+
+export const CONTRACT_ABI_V3 = {
+  civicToken: {
+    address: process.env.CIVIC_TOKEN_CA,
+    abi: CIVIX_ABI,
+  },
+  supportBadge: {
+    address: process.env.SUPPORT_BADGE_CA,
+    abi: BADGE_ABI,
+  },
+  petition: {
+    address: process.env.PETITION_NFT_CA,
+    abi: PETITION_ABI,
+  },
+}
 
 export const CONTRACT_ABI = [
   {
@@ -120,6 +140,7 @@ export const CONTRACT_ABI = [
     type: "function"
   }
 ];
+
 export const PetitionCategory = [
   'SOCIAL', 'POLITICAL', 'ENVIRONMENTAL', 'EDUCATION',
   'HEALTH', 'HUMAN_RIGHTS', 'ANIMAL_RIGHTS', 'ECONOMIC',

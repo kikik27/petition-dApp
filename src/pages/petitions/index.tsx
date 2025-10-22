@@ -1,20 +1,14 @@
 'use client'
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useAccount } from 'wagmi';
-import Image from 'next/image';
 import useTheme from '@/stores/theme';
 
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import CreatePetitionFormV2 from '@/components/petition/create-petitionV2';
 import { usePetitionStore } from '@/stores/petition'
 import { CardPetition } from '@/components/petition/card-petition';
 
 export default function Home() {
   const { setLoading } = useTheme();
   const { isConnected, isConnecting, isReconnecting } = useAccount();
-  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (isConnecting || isReconnecting) {
@@ -25,7 +19,7 @@ export default function Home() {
   }, [isConnecting, isReconnecting, setLoading])
 
   return (
-    <main className="min-h-screen mx-auto flex justify-center items-center">
+    <main className="min-h-screen mx-auto my-au p-4 flex justify-center items-center">
       {!isConnected ? (
         <div className="mx-auto max-w-4xl text-center items-center py-40">
           <h1 className="mb-6 text-4xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
@@ -37,25 +31,19 @@ export default function Home() {
           <p className="text-gray-300 mb-8">Please connect your wallet to create and sign petitions !</p>
         </div>
       ) : (
-        <Tabs defaultValue="browse" className="w-full py-6">
-          <TabsList className="grid bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 w-full max-w-md mx-auto grid-cols-2 mb-8">
-            <TabsTrigger value="browse">Browse Petitions</TabsTrigger>
-            <TabsTrigger value="create">Create Petition</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="browse">
-            <PetitionList
-            />
-          </TabsContent>
-
-          <TabsContent value="create">
-            <CreatePetitionFormV2 onSuccess={() => setRefreshKey(prev => prev + 1)} />
-          </TabsContent>
-        </Tabs>
+        <div>
+            <h2 className="mb-4 text-xl font-black text-white sm:text-2xl">
+              Sign Petition
+            </h2>
+          <div className='grid lg:grid-cols-3 gap-4 sm:grid-cols-1 md:grid-cols-2'>
+              <PetitionList />
+          </div>
+        </div>
       )}
     </main>
   );
 }
+
 
 function PetitionList() {
   const { petitions, loading, error, fetchPetitions } = usePetitionStore();
@@ -75,7 +63,7 @@ function PetitionList() {
     }
   }, [loading, setLoading, setLoadingMessage, setLoadingDescription]);
 
- useEffect(() => {
+  useEffect(() => {
     if (error) {
       setLoading(true);
       setLoadingMessage("⚠️ Error loading petitions");
@@ -87,10 +75,7 @@ function PetitionList() {
   if (loading) return null; // biar loading handled oleh Theme
   if (error && !petitions.length) return null; // biar error modal tampil dari Theme
 
-  return (<div className="grid md:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-6 p-6">
-      {petitions.map((petition) => {
-        return <CardPetition key={petition.tokenId} petition={petition} />;
-      })}
-    </div>
-  );
+  return petitions.map((petition) => {
+    return <CardPetition key={petition.tokenId} petition={petition} />;
+  });
 }

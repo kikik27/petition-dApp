@@ -8,6 +8,7 @@ import { Separator } from "../ui/separator";
 import { Progress } from "../ui/progress";
 import { Button } from "../ui/button";
 import { PetitionMetadata } from "@/types";
+import Link from "next/link";
 
 export const CardPetition = ({ petition }: { petition: PetitionMetadata }) => {
   const categoryInfo = getCategoryInfo(petition.category)
@@ -74,7 +75,7 @@ export const CardPetition = ({ petition }: { petition: PetitionMetadata }) => {
             Target: {petition.targetSignatures} | Signatures: {petition.signatureCount}
           </div>
 
-          <Progress value={Number(petition.progress)} className="h-2 bg-gray-800 mt-2" />
+          <Progress value={Number(petition.progress)} />
           <p className="text-xs text-gray-500">{petition.progress}% reached</p>
         </CardContent>
         <Separator className="bg-gray-800" />
@@ -83,17 +84,14 @@ export const CardPetition = ({ petition }: { petition: PetitionMetadata }) => {
             <div>Start: {petition.startDate.toLocaleDateString()}</div>
             <div>End: {petition.endDate.toLocaleDateString()}</div>
           </div>
-          <div className="flex gap-2">
-            <Button className="bg-green-600 hover:bg-green-700 text-white text-sm">
-              Sign
-            </Button>
+          <Link href={`/petitions/${petition.tokenId}`} passHref>
             <Button
               variant="outline"
-              className="border-gray-700 text-gray-300 hover:bg-gray-800 text-sm"
+              className=" text-gray-300 hover:bg-gray-800 text-sm"
             >
               View
             </Button>
-          </div>
+          </Link>
         </CardFooter>
       </Card>
     </motion.div>

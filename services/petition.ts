@@ -1,6 +1,6 @@
 import { CONTRACT_ABI_V2, CONTRACT_ADDRESS } from "@/constants";
 import { publicClient } from "@/lib/wagmi-client";
-import { PetitionCategory, PetitionMetadata, PetitionState } from "@/types/petition";
+import { PetitionCategory, PetitionMetadata, PetitionState, Signer } from "@/types/petition";
 
 export const PetitionService = {
   async getAllPetitionIds(): Promise<bigint[]> {
@@ -83,4 +83,14 @@ export const PetitionService = {
     const petitions = await Promise.all(ids.map((id) => this.getPetitionById(id)));
     return petitions;
   },
+
+  async getSigners(tokenId: bigint) : Promise<Signer[]> {
+    return (await publicClient.readContract({
+      address: CONTRACT_ADDRESS as `0x${string}`,
+      abi: CONTRACT_ABI_V2,
+      functionName: "getSigners",
+      args: [tokenId],
+    })) as Signer[];
+  }
+
 };

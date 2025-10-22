@@ -44,7 +44,6 @@ export function Editor({
       >
         <TooltipProvider>
           <Plugins />
-
           <OnChangePlugin
             ignoreSelectionChange={true}
             onChange={(editorState) => {

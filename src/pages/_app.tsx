@@ -1,5 +1,6 @@
 import '../styles/globals.css';
 import '@rainbow-me/rainbowkit/styles.css';
+
 import type { AppProps } from 'next/app';
 
 import { Metadata } from 'next';
@@ -12,9 +13,9 @@ import AppHeader from '@/components/app-header';
 import AppFooter from '@/components/app-footer';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
-import CryptoWalletLottie from '@/components/lottie/crypto-wallet-lottie';
 import useTheme from '@/stores/theme';
 import { wagmiConfig } from '@/lib/wagmi-config';
+import { CryptoWalletLottie } from '@/components/lottie/lottieAnim';
 
 const client = new QueryClient();
 

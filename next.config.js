@@ -14,7 +14,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https", // or https
-        hostname: "*", // Allow all hostnames
+        hostname: "gateway.pinata.cloud", // Allow all hostnames
       },
     ],
   },

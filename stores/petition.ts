@@ -1,4 +1,4 @@
-import { PetitionService } from "@/services/petititon.service";
+import { PetitionService } from "@/services/petition";
 import { IPetitionStore } from "@/types";
 import { create } from "zustand";
 

@@ -1,3 +1,5 @@
+import { Interface } from "readline";
+
 export type PetitionState = "DRAFT" | "PUBLISHED" | "COMPLETED" | "CANCELLED";
 
 export type PetitionCategory =
@@ -46,4 +48,10 @@ export interface IPetitionStore {
   loading: boolean;
   error: string | null;
   fetchPetitions: () => Promise<void>;
+}
+
+export interface Signer {
+  message: string;
+  timestamp: number;
+  signerAddress: string;
 }

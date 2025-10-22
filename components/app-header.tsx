@@ -2,11 +2,18 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Menu, X } from "lucide-react";
-import router from "next/router";
+import router, { useRouter } from "next/router";
 import Image from "next/image";
+import { useAccount } from "wagmi";
+
+import Link from "next/link";
 
 const AppHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isConnected } = useAccount();
+
+  const router = useRouter();
+  const isActive = (pathname: string) => router.pathname === pathname;
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-800 bg-gray-950/95 backdrop-blur supports-[backdrop-filter]:bg-gray-950/60">
@@ -17,13 +24,42 @@ const AppHeader = () => {
             <div className="flex-shrink-0 flex items-center">
               {/* <Vote className="h-8 w-8 text-primary mr-2" /> */}
               <Image src="/image/logo.png" alt="Logo" width={40} height={40} />
-                <span onClick={() => {
+              <span onClick={() => {
                 router.push("/")
-                }} className="text-xl font-bold ml-2 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent cursor-pointer">
+              }} className="text-xl font-bold ml-2 bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent cursor-pointer">
                 Mandat
-                </span>
+              </span>
             </div>
           </div>
+
+          {isConnected && (
+            <nav className="hidden md:flex space-x-6 ml-10">
+              <Link
+                href="/petitions"
+                className={`
+                text-gray-300 hover:text-white relative transition-all duration-300
+                ${isActive('/petitions')
+                  ? 'text-light-blue after:bg-blue-500 after:absolute after:bottom-0 after:top-10 after:left-0 after:w-full after:h-1 after:bg-primary-blue after:animate-pulse-glow after:rounded-full after:transition-all after:duration-300'
+                    : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
+                  }
+              `}
+              >
+                Petitions
+              </Link>
+              <Link
+                href="/petitions/create"
+                className={`
+                text-gray-300 hover:text-white relative transition-all duration-300
+                ${isActive('/petitions/create')
+                    ? 'text-light-blue after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary-blue after:shadow-glow-blue after:rounded-full after:transition-all after:duration-300'
+                    : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
+                  }
+              `}
+              >
+                Create
+              </Link>
+            </nav>
+          )}
 
           {/* CTA Button */}
           <div className="hidden md:block">
@@ -62,7 +98,7 @@ const AppHeader = () => {
                       {(() => {
                         if (!connected) {
                           return (
-                            <Button className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 hover:to-purple-700" onClick={openConnectModal} type="button">
+                            <Button className="bg-gray-50/7 hover:bg-gray-50/3 p-4 border text-white" onClick={openConnectModal} type="button">
                               Connect Wallet
                             </Button>
                           );
@@ -77,44 +113,19 @@ const AppHeader = () => {
                         }
 
                         return (
-                          <div style={{ display: 'flex', gap: 12 }}>
-                            <Button
-                              className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 hover:to-purple-700"
-                              onClick={openChainModal}
-                              style={{ display: 'flex', alignItems: 'center' }}
-                              type="button"
-                            >
-                              {chain.hasIcon && (
-                                <div
-                                  style={{
-                                    background: chain.iconBackground,
-                                    width: 12,
-                                    height: 12,
-                                    borderRadius: 999,
-                                    overflow: 'hidden',
-                                    marginRight: 4,
-                                  }}
-                                >
-                                  {chain.iconUrl && (
-                                    <Image
-                                      alt={chain.name ?? 'Chain icon'}
-                                      src={chain.iconUrl}
-                                      width={12}
-                                      height={12}
-                                    />
-                                  )}
-                                </div>
-                              )}
-                              {chain.name}
-                            </Button>
-
-                            <Button className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 hover:to-purple-700" onClick={openAccountModal} type="button">
-                              {account.displayName}
-                              {account.displayBalance
-                                ? ` (${account.displayBalance})`
-                                : ''}
-                            </Button>
-                          </div>
+                          <Button className="bg-gray-50/7 hover:bg-gray-50/3 p-4 border text-white" onClick={openAccountModal} type="button">
+                            {chain.iconUrl && (
+                              <Image
+                                alt={chain.name ?? 'Chain icon'}
+                                src={chain.iconUrl}
+                                width={18}
+                                height={18}
+                              />
+                            )}{account.displayName}
+                            {account.displayBalance
+                              ? ` (${account.displayBalance})`
+                              : ''}
+                          </Button>
                         );
                       })()}
                     </div>
@@ -191,43 +202,12 @@ const AppHeader = () => {
                             }
 
                             return (
-                              <div style={{ display: 'flex', gap: 12 }}>
-                                <Button
-                                  className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 hover:to-purple-700"
-                                  onClick={openChainModal}
-                                  style={{ display: 'flex', alignItems: 'center' }}
-                                  type="button"
-                                >
-                                  {chain.hasIcon && (
-                                    <div
-                                      style={{
-                                        background: chain.iconBackground,
-                                        width: 12,
-                                        height: 12,
-                                        borderRadius: 999,
-                                        overflow: 'hidden',
-                                        marginRight: 4,
-                                      }}
-                                    >
-                                      {chain.iconUrl && (
-                                        <Image
-                                          alt={chain.name ?? 'Chain icon'}
-                                          src={chain.iconUrl}
-                                          style={{ width: 12, height: 12 }}
-                                        />
-                                      )}
-                                    </div>
-                                  )}
-                                  {chain.name}
-                                </Button>
-
-                                <Button className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 hover:to-purple-700" onClick={openAccountModal} type="button">
-                                  {account.displayName}
-                                  {account.displayBalance
-                                    ? ` (${account.displayBalance})`
-                                    : ''}
-                                </Button>
-                              </div>
+                              <Button className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 hover:to-purple-700" onClick={openAccountModal} type="button">
+                                {account.displayName}
+                                {account.displayBalance
+                                  ? ` (${account.displayBalance})`
+                                  : ''}
+                              </Button>
                             );
                           })()}
                         </div>

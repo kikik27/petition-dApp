@@ -1,166 +1,133 @@
-// React Components for Petition NFT V2
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useTransaction, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { toast } from "sonner";
-import ConntractABI from "@/abi/petitionV2.json"
-
-import { uploadFile, uploadMetadata } from '@/lib/ipfs';
+import { uploadFile, uploadMetadata } from "@/lib/ipfs";
 import { CONTRACT_ABI_V2, CONTRACT_ADDRESS, PetitionCategory } from "@/constants/petition";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { CustomField } from "@/components/ui/form-field";
 import { Badge } from "@/components/ui/badge";
-import useTheme from '@/stores/theme';
-import { confirmToast } from '../global/confirmToast';
-import { getReadableError, isUserRejected } from '@/lib/utils';
+import useTheme from "@/stores/theme";
+import { confirmToast } from "@/components/global/confirmToast";
+import { getReadableError, isUserRejected } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "../ui/textarea";
+import { Separator } from "../ui/separator";
+import { CheckCircle2, Circle, ChevronRight, ChevronLeft, X, FileText } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+
+const STEPS = [
+  { id: 1, title: "Basic Info", description: "Title & Description" },
+  { id: 2, title: "Details", description: "Category & Timeline" },
+  { id: 3, title: "Media", description: "Images & Documents" },
+  { id: 4, title: "Review", description: "Final Check" },
+];
+
+const FormSchema = z
+  .object({
+    titlePetition: z.string().min(10, "Title must be at least 10 characters").max(100, "Title too long"),
+    richText: z.string().min(50, "Description must be at least 50 characters").max(10000, "Description too long"),
+    category: z.string().min(1, "Please select a category"),
+    startDate: z.string().refine((date) => {
+      const selectedDate = new Date(date);
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      return selectedDate >= now;
+    }, "Start date must be today or in the future"),
+    endDate: z.string().refine((date) => !isNaN(Date.parse(date)), "Invalid end date"),
+    targetSignatures: z
+      .string()
+      .refine((val) => !isNaN(Number(val)) && Number(val) >= 2, "Minimum target is 2 signatures"),
+    tags: z.string(),
+    image: z
+      .instanceof(File, { message: "Image is required" })
+      .refine((file) => file.size <= 500 * 1024, "Image must be less than 500KB")
+      .refine(
+        (file) => ["image/jpeg", "image/png", "image/webp", "image/jpg"].includes(file.type),
+        "Only JPEG, PNG, JPG, or WebP images are allowed"
+      ),
+    documents: z
+      .array(z.instanceof(File))
+      .optional()
+      .refine((files) => !files || files.every((f) => f.size <= 500 * 1024), "Each document < 500KB")
+      .refine((files) => !files || files.length <= 5, "Maximum 5 documents allowed"),
+  })
+  .refine((data) => new Date(data.endDate) > new Date(data.startDate), {
+    message: "End date must be after start date",
+    path: ["endDate"],
+  });
+
+type PetitionFormValues = z.infer<typeof FormSchema>;
 
 const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => void }) => {
   const { setLoading, setLoadingMessage, setLoadingDescription } = useTheme();
-
-  const FormSchema = z.object({
-    title: z.string()
-      .min(10, "Title must be at least 10 characters")
-      .max(200, "Title must not exceed 200 characters"),
-
-    richText: z.string()
-      .min(50, "Description must be at least 50 characters")
-      .max(10000, "Description must not exceed 10,000 characters"),
-
-    category: z.string()
-      .min(1, "Please select a category"),
-
-    startDate: z.string()
-      .refine((date) => {
-        const selectedDate = new Date(date);
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        return selectedDate >= now;
-      }, {
-        message: "Start date must be today or in the future"
-      }),
-
-    endDate: z.string()
-      .refine((date) => !isNaN(Date.parse(date)), {
-        message: "Invalid end date"
-      }),
-
-    targetSignatures: z.string()
-      .refine(val => !isNaN(Number(val)) && Number(val) > 0, {
-        message: "Target must be a positive number"
-      })
-      .refine(val => Number(val) >= 100, {
-        message: "Minimum target is 100 signatures"
-      }),
-
-    tags: z.string(),
-
-    // Image file upload
-    image: z
-      .instanceof(File, { message: "Image is required" })
-      .refine((file) => file.size <= 500 * 1024, {
-        message: "Image must be less than 500KB",
-      })
-      .refine(
-        (file) =>
-          ["image/jpeg", "image/png", "image/webp", "image/jpg"].includes(
-            file.type
-          ),
-        {
-          message: "Only JPEG, PNG, JPG, or WebP images are allowed",
-        }
-      ),
-
-    // Multiple document uploads (optional)
-    documents: z.array(z.instanceof(File))
-      .optional()
-      .refine((files) => !files || files.every(file => file.size <= 500 * 1024), {
-        message: "Each document must be less than 500KB"
-      })
-      .refine((files) => !files || files.length <= 5, {
-        message: "Maximum 5 documents allowed"
-      }),
-
-  }).refine(data => {
-    const start = new Date(data.startDate);
-    const end = new Date(data.endDate);
-    return end > start;
-  }, {
-    message: "End date must be after start date",
-    path: ["endDate"]
-  });
-
-  // Type inference from schema
-  type PetitionFormValues = z.infer<typeof FormSchema>;
-
-  const form = useForm<PetitionFormValues>({
-    resolver: zodResolver(FormSchema),
-    defaultValues: {
-      title: '',
-      richText: '',
-      category: '0',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: '',
-      targetSignatures: '1000',
-      tags: '',
-      image: undefined,
-      documents: undefined
-    }
-  });
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentDraftId, setCurrentDraftId] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [parsedTags, setParsedTags] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Wagmi hooks
   const { writeContract, data: hash, isPending, error: writeError } = useWriteContract();
   const { isSuccess, isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
 
-  // Handle tags parsing
-  const handleTagsChange = (value: string) => {
-    const tags = value.split(',').map(t => t.trim()).filter(Boolean).slice(0, 10);
+  const form = useForm<PetitionFormValues>({
+    resolver: zodResolver(FormSchema),
+    mode: "onChange",
+    shouldUnregister: false, // <--- penting agar nilai tidak hilang antar step
+    defaultValues: {
+      titlePetition: "",
+      richText: "",
+      category: "",
+      startDate: new Date().toISOString().split("T")[0],
+      endDate: "",
+      targetSignatures: "100",
+      tags: "",
+      image: undefined,
+      documents: undefined,
+    },
+  });
+
+  // === Utility functions ===
+  const handleTagsChange = (val: string) => {
+    const tags = val.split(",").map((t) => t.trim()).filter(Boolean).slice(0, 10);
     setParsedTags(tags);
   };
 
-  // Success handler
-  useEffect(() => {
-    if (isSuccess && hash) {
-      form.reset();
-      setParsedTags([]);
-      setCurrentDraftId(null);
+  const handleImageChange = (file?: File) => {
+    if (!file) return setImagePreview(null);
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
 
-      setLoading(false);
-      setLoadingMessage('');
-      setLoadingDescription('');
+  const validateStep = async () => {
+    const fields: Record<number, (keyof PetitionFormValues)[]> = {
+      1: ["titlePetition", "richText"],
+      2: ["category", "startDate", "endDate", "targetSignatures", "tags"],
+      3: ["image"],
+    };
+    return form.trigger(fields[currentStep] || []);
+  };
 
-      toast.success("Petition created successfully!", {
-        description: "Your petition is now live on the blockchain.",
-      });
+  const handleNext = async () => {
+    if (await validateStep()) setCurrentStep((s) => Math.min(s + 1, STEPS.length));
+    else toast.error("Please fill all required fields correctly");
+  };
 
-      if (onSuccess) {
-        onSuccess(hash);
-      }
-    }
-  }, [isSuccess, hash]);
+  const handlePrev = () => setCurrentStep((s) => Math.max(s - 1, 1));
 
-  // Error handler
-  useEffect(() => {
-    if (!writeError) return;
-    const msg = getReadableError(writeError);
-    setIsSubmitting(false);
-    setLoading(false);
-    setLoadingMessage("Transaction Failed");
-    setLoadingDescription(msg);
-    toast.error("Transaction failed", { description: msg });
-    // eslint-disable-next-line no-console
-    console.log(msg);
-  }, [writeError]);
+  const removeDocument = (i: number) => {
+    const docs = form.getValues("documents") || [];
+    form.setValue("documents", docs.filter((_, idx) => idx !== i));
+  };
 
+  const removeImage = () => {
+    form.setValue("image", new File([], ""));
+    setImagePreview(null);
+  };
 
   const handlePublish = async (data: PetitionFormValues) => {
     const confirmed = confirmToast("⚠️ WARNING: Creating is IRREVERSIBLE!");
@@ -168,31 +135,23 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
 
     try {
       setIsSubmitting(true);
-
-      setLoading(true)
+      setLoading(true);
       setLoadingMessage("Creating Petition...");
-      setLoadingDescription("Uploading to IPFS and blockchain");
+      setLoadingDescription("Uploading to IPFS and block chain");
 
-      // Upload image to IPFS
       const { gatewayUrl: gatewayUrlImage } = await uploadFile(data.image);
-  
-      // Upload documents to IPFS
-      const documentMetadata = data.documents && data.documents.length > 0
-        ? await Promise.all(
-          data.documents.map(async (doc: File) => {
-            const { url } = await uploadFile(doc);
-            return {
-              name: doc.name,
-              url,
-              uploadedAt: Date.now()
-            };
-          })
-        )
-        : [];
+      const documentMetadata =
+        data.documents?.length
+          ? await Promise.all(
+            data.documents.map(async (doc) => {
+              const { url } = await uploadFile(doc);
+              return { name: doc.name, url, uploadedAt: Date.now() };
+            })
+          )
+          : [];
 
-      // Create metadata
       const metadata = {
-        name: data.title,
+        name: data.titlePetition,
         description: data.richText,
         image: gatewayUrlImage,
         petitionData: {
@@ -202,303 +161,387 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
           documents: documentMetadata,
           targetSignatures: data.targetSignatures,
           startDate: data.startDate,
-          endDate: data.endDate
-        }
+          endDate: data.endDate,
+        },
       };
 
       const { url } = await uploadMetadata(metadata);
+      const start = Math.floor(new Date(data.startDate).getTime() / 1000);
+      const end = Math.floor(new Date(data.endDate).getTime() / 1000);
 
-      // Convert dates to timestamps
-      const startTimestamp = Math.floor(new Date(data.startDate).getTime() / 1000);
-      const endTimestamp = Math.floor(new Date(data.endDate).getTime() / 1000);
-
-      setLoadingDescription("Uploading petition to blockchain...");
-
-      const args = [
-        url,
-        0,
-        parsedTags,
-        BigInt(startTimestamp),
-        BigInt(endTimestamp),
-        data.targetSignatures ? BigInt(data.targetSignatures) : BigInt(0)
-      ];
-
-      // Call smart contract - Publish Petition
-      writeContract({
+      await writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi: CONTRACT_ABI_V2,
-        functionName: 'createPetition',
-        args
+        functionName: "createPetition",
+        args: [url, 0, parsedTags, BigInt(start), BigInt(end), BigInt(data.targetSignatures || 0)],
       });
-
-    } catch (error) {
-      const readable = getReadableError(error);
-      if (isUserRejected(error)) {
-        toast.info("Transaction cancelled", { description: "You rejected the request." });
-        setLoadingMessage("Transaction cancelled");
-        setLoadingDescription("You rejected the wallet prompt.");
-      } else {
-        toast.error("Transaction failed", { description: readable });
-        setLoadingMessage("Transaction Failed");
-        setLoadingDescription(readable);
-        console.error("Error creating petition:", error);
-      }
+    } catch (err) {
+      const msg = getReadableError(err);
+      isUserRejected(err)
+        ? toast.info("Transaction cancelled", { description: "You rejected the request." })
+        : toast.error("Transaction failed", { description: msg });
+      setLoadingMessage("Transaction Failed");
+      setLoadingDescription(msg);
     } finally {
       setIsSubmitting(false);
-      setLoading(false)
+      setLoading(false);
     }
   };
 
+  // === Effects ===
+  useEffect(() => {
+    if (isSuccess && hash) {
+      toast.success("Petition created successfully!", { description: "Your petition is live on block space-y-4chain." });
+      form.reset();
+      setParsedTags([]);
+      setCurrentStep(1);
+      setImagePreview(null);
+      setLoading(false);
+      if (onSuccess) onSuccess(hash);
+    }
+  }, [isSuccess, hash]);
+
+  useEffect(() => {
+    if (writeError) {
+      const msg = getReadableError(writeError);
+      toast.error("Transaction failed", { description: msg });
+      setIsSubmitting(false);
+      setLoading(false);
+      setLoadingMessage("Transaction Failed");
+      setLoadingDescription(msg);
+    }
+  }, [writeError]);
+
   const isLoading = isPending || isConfirming || isSubmitting;
+  const values = form.getValues();
 
-  return (
-    <Card className="max-w-4xl mx-auto hover:shadow-lg transition-shadow bg-black/10">
-      <CardHeader>
-        <CardTitle className="text-3xl">
-          {currentDraftId ? 'Edit Draft' : 'Create New Petition'}
-        </CardTitle>
-        <CardDescription>
-          Start a petition and gather support for your cause
-        </CardDescription>
-      </CardHeader>
+  // === Step sections rendered but hidden (prevent unmount) ===
+  const StepSections = (
+    <div className="">
+      {/* Step 1 */}
+      <div className={currentStep === 1 ? "block space-y-4" : "hidden"}>
+        <CustomField
+          primary
+          name="titlePetition"
+          label="Petition Title"
+          control={form.control}
+          render={({ field }) => <Input {...field} placeholder="Your petition title..." />}
+        />
+        <CustomField
+          primary
+          name="richText"
+          label="Description"
+          control={form.control}
+          render={({ field }) => (
+            <Textarea {...field} placeholder="Explain your petition in detail..." rows={8} />
+          )}
+        />
+      </div>
 
-      <Form {...form}>
-        <form className="space-y-4">
-          <CardContent className="space-y-6">
+      {/* Step 2 */}
+      <div className={currentStep === 2 ? "block space-y-4" : "hidden"}>
+        <CustomField
+          primary
+          name="category"
+          label="Category"
+          control={form.control}
+          render={({ field }) => (
+            <Select
+              onValueChange={(id) => {
+                form.setValue("category", id);
+                field.onChange(id);
+              }}
+              value={field.value || ""}
+            >
+              <SelectTrigger className="w-full px-4 py-2 border rounded-lg bg-background">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {PetitionCategory.map((cat, idx) => (
+                  <SelectItem key={idx} value={idx.toString()}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        <div className="grid grid-cols-2 gap-4">
+          <CustomField
+            primary
+            name="startDate"
+            label="Start Date"
+            control={form.control}
+            render={({ field }) => <Input {...field} type="date" />}
+          />
+          <CustomField
+            primary
+            name="endDate"
+            label="End Date"
+            control={form.control}
+            render={({ field }) => <Input {...field} type="date" />}
+          />
+        </div>
+        <CustomField
+          primary
+          name="targetSignatures"
+          label="Target Signatures"
+          control={form.control}
+          render={({ field }) => <Input {...field} type="number" min="2" placeholder="e.g. 1000" />}
+        />
+        <CustomField
+          name="tags"
+          label="Tags (comma-separated)"
+          control={form.control}
+          render={({ field }) => (
+            <>
+              <Input
+                {...field}
+                placeholder="education, environment..."
+                onChange={(e) => {
+                  field.onChange(e);
+                  handleTagsChange(e.target.value);
+                }}
+              />
+              <div className="flex flex-wrap gap-2 mt-2">
+                {parsedTags.map((tag, i) => (
+                  <Badge key={i}>#{tag}</Badge>
+                ))}
+              </div>
+            </>
+          )}
+        />
+      </div>
 
-            {/* Title */}
-            <CustomField
-              primary
-              name="title"
-              label="Petition Title"
-              control={form.control}
-              render={({ field }) => (
+      {/* Step 3 */}
+      <div className={currentStep === 3 ? "block space-y-4" : "hidden"}>
+        <CustomField
+          name="image"
+          label="Upload Cover Image (Max 500KB)"
+          control={form.control}
+          render={({ field: { value, onChange } }) => (
+            <div className="space-y-3">
+              {!imagePreview ? (
                 <Input
-                  {...field}
-                  placeholder="Enter a clear and compelling title..."
-                  maxLength={200}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file && file.size <= 500 * 1024) {
+                      onChange(file);
+                      handleImageChange(file);
+                    } else toast.error("Invalid file size");
+                  }}
                 />
+              ) : (
+                <div className="relative">
+                  <img src={imagePreview} alt="Preview" className="rounded-md w-full h-64 object-cover" />
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="destructive"
+                    onClick={removeImage}
+                    className="absolute top-2 right-2"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
               )}
-            />
+            </div>
+          )}
+        />
 
-            {/* Rich Text Description */}
-            <CustomField
-              primary
-              name="richText"
-              label="Petition Description"
-              control={form.control}
-              render={({ field }) => (
-                <Textarea
-                  {...field}
-                  placeholder="Describe your petition in detail. Explain why this matters and what you hope to achieve..."
-                  rows={8}
-                  maxLength={10000}
-                />
-              )}
-            />
-
-            {/* Category */}
-            <CustomField
-              primary
-              name="category"
-              label="Category"
-              control={form.control}
-              render={({ field }) => (
-                <select
-                  {...field}
-                  className="w-full px-4 py-2 border rounded-lg bg-background"
-                >
-                  {PetitionCategory.map((cat, idx) => (
-                    <option key={idx} value={idx}>
-                      {cat}
-                    </option>
+        <CustomField
+          name="documents"
+          label="Supporting Documents (optional)"
+          control={form.control}
+          render={({ field: { value, onChange } }) => (
+            <div className="space-y-3">
+              <Input
+                type="file"
+                multiple
+                onChange={(e) => {
+                  const files = e.target.files ? Array.from(e.target.files) : [];
+                  onChange([...(value || []), ...files]);
+                }}
+              />
+              {(value || []).length > 0 && (
+                <div className="space-y-2">
+                  {(value || []).map((f: File, i: number) => (
+                    <div key={i} className="flex items-center justify-between p-2 rounded-md border">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        <span className="text-sm">{f.name}</span>
+                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => removeDocument(i)}>
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
                   ))}
-                </select>
+                </div>
               )}
-            />
+            </div>
+          )}
+        />
+      </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Start Date */}
-              <CustomField
-                primary
-                name="startDate"
-                label="Start Date"
-                control={form.control}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    type="date"
-                  />
-                )}
-              />
+      {/* Step 4 (Review) */}
+      <div className={currentStep === 4 ? "block space-y-4" : "hidden"}>
+        <div className="rounded-lg border p-6 space-y-6 bg-muted/30">
+          <div className="flex items-center gap-2 mb-4">
+            <CheckCircle2 className="w-5 h-5 text-primary" />
+            <h3 className="font-semibold text-lg">Review Your Petition</h3>
+          </div>
 
-              {/* End Date */}
-              <CustomField
-                primary
-                name="endDate"
-                label="End Date"
-                control={form.control}
-                render={({ field }) => (
-                  <Input
-                    {...field}
-                    type="date"
-                  />
-                )}
-              />
+          {/* Image Preview */}
+          {imagePreview && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-muted-foreground">Cover Image</p>
+              <div className="rounded-lg overflow-hidden border">
+                <img
+                  src={imagePreview}
+                  alt="Cover preview"
+                  className="w-full h-48 object-cover"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Title</p>
+              <p className="font-semibold text-lg">{values.titlePetition}</p>
             </div>
 
-            {/* Target Signatures */}
-            <CustomField
-              primary
-              name="targetSignatures"
-              label="Target Signatures"
-              control={form.control}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  type="number"
-                  min="100"
-                  placeholder="e.g., 1000"
-                />
-              )}
-            />
+            <div>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Description</p>
+              <div className="text-sm bg-background p-4 rounded-lg border max-h-32 overflow-y-auto">
+                {values.richText}
+              </div>
+            </div>
 
-            {/* Tags */}
-            <CustomField
-              name="tags"
-              label="Tags (Max 10)"
-              control={form.control}
-              render={({ field }) => (
-                <>
-                  <Input
-                    {...field}
-                    placeholder="climate, environment, urgent (comma-separated)"
-                    onChange={(e) => {
-                      field.onChange(e);
-                      handleTagsChange(e.target.value);
-                    }}
-                  />
-                  {parsedTags.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {parsedTags.map((tag, idx) => (
-                        <Badge key={idx} variant="secondary">
-                          #{tag}
-                        </Badge>
-                      ))}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Category</p>
+                <Badge variant="outline" className="mt-1">
+                  {values.category ? PetitionCategory[parseInt(values.category)] : '-'}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Target Signatures</p>
+                <p className="text-sm font-semibold">{values.targetSignatures} signatures</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Start Date</p>
+                <p className="text-sm">{new Date(values.startDate).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">End Date</p>
+                <p className="text-sm">{new Date(values.endDate).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}</p>
+              </div>
+            </div>
+
+            {parsedTags.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Tags</p>
+                <div className="flex flex-wrap gap-2">
+                  {parsedTags.map((tag, idx) => (
+                    <Badge key={idx} variant="secondary">#{tag}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {values.documents && (values.documents as File[]).length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Supporting Documents</p>
+                <div className="space-y-2">
+                  {(values.documents as File[]).map((doc: File, idx: number) => (
+                    <div key={idx} className="flex items-center gap-3 p-2 rounded-lg bg-background border">
+                      <FileText className="w-4 h-4 text-muted-foreground" />
+                      <div className="flex-1">
+                        <p className="text-xs font-medium">{doc.name}</p>
+                        <p className="text-xs text-muted-foreground">{(doc.size / 1024).toFixed(1)} KB</p>
+                      </div>
                     </div>
-                  )}
-                </>
-              )}
-            />
-
-            {/* Cover Image Upload */}
-            <CustomField
-              name="image"
-              label="Or Upload Cover Image (Max 500KB)"
-              control={form.control}
-              render={({ field: { value, onChange, ...fieldProps } }) => (
-                <>
-                  <Input
-                    {...fieldProps}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/jpg"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        if (file.size > 500 * 1024) {
-                          toast.error("Image must be less than 500KB");
-                          e.target.value = '';
-                          return;
-                        }
-                        onChange(file);
-                      }
-                    }}
-                  />
-                  {value && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Selected: {(value as File).name} ({((value as File).size / 1024).toFixed(1)} KB)
-                    </p>
-                  )}
-                </>
-              )}
-            />
-
-            {/* Supporting Documents */}
-            <CustomField
-              name="documents"
-              label="Supporting Documents (Max 5 files, 500KB each)"
-              control={form.control}
-              render={({ field: { value, onChange, ...fieldProps } }) => (
-                <>
-                  <Input
-                    {...fieldProps}
-                    type="file"
-                    multiple
-                    onChange={(e) => {
-                      const files = e.target.files;
-                      if (files) {
-                        const fileArray = Array.from(files).slice(0, 5);
-
-                        // Validate file sizes
-                        const invalidFiles = fileArray.filter(f => f.size > 500 * 1024);
-                        if (invalidFiles.length > 0) {
-                          toast.error("Each document must be less than 500KB");
-                          e.target.value = '';
-                          return;
-                        }
-
-                        onChange(fileArray);
-                      }
-                    }}
-                  />
-                  {value && (value as File[]).length > 0 && (
-                    <ul className="mt-2 space-y-1">
-                      {(value as File[]).map((doc: File, idx: number) => (
-                        <li key={idx} className="text-sm text-muted-foreground">
-                          📄 {doc.name} ({(doc.size / 1024).toFixed(1)} KB)
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </>
-              )}
-            />
-
-          </CardContent>
-
-          <CardFooter className="flex gap-4">
-            {/* Save as Draft Button */}
-            <Button
-              type="button"
-              variant="outline"
-              // onClick={form.handleSubmit(handleSaveDraft)}
-              disabled={true}
-              className="flex-1"
-            >
-              Draft (Coming Soon)
-            </Button>
-
-            {/* Publish Button */}
-            <Button
-              type="button"
-              onClick={form.handleSubmit(handlePublish)}
-              disabled={isLoading}
-              className="flex-1"
-            >
-              {isLoading ? 'Processing...' : '🚀 Publish Petition'}
-            </Button>
-          </CardFooter>
-        </form>
-      </Form>
-
-      <div className="px-6 pb-6">
-        {/* <p className="text-sm text-muted-foreground">
-          💡 <strong>Tip:</strong> Save as draft first to test, review carefully, then publish when ready.
-          Published petitions cannot be edited!
-        </p> */}
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+
+    </div>
+  );
+
+  return (
+    <Card className="max-w-4xl mx-auto bg-black/10">
+      <CardHeader>
+        <CardTitle>Create New Petition</CardTitle>
+        <CardDescription>Complete all steps to publish your petition.</CardDescription>
+      </CardHeader>
+      <div className="px-6">
+        <div className="flex items-center justify-between">
+          {STEPS.map((s, i) => (
+            <React.Fragment key={s.id}>
+              <div className="flex flex-col items-center flex-1">
+                <div
+                  className={`w-10 h-10 flex items-center justify-center rounded-full border-2 ${currentStep >= s.id ? "border-primary text-primary" : "border-muted text-muted-foreground"
+                    }`}
+                >
+                  {currentStep > s.id ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
+                </div>
+                <p className="text-sm mt-1">{s.title}</p>
+              </div>
+              {i < STEPS.length - 1 && <div className="flex-1 h-0.5 bg-muted mx-2" />}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
+      <Separator />
+
+      <Form {...form}>
+        <CardContent>{StepSections}</CardContent>
+        <Separator />
+        <CardFooter className="flex justify-between">
+          <Button onClick={handlePrev} variant="outline" disabled={currentStep === 1 || isLoading}>
+            <ChevronLeft className="w-4 h-4 mr-2" /> Previous
+          </Button>
+          <Button
+            onClick={
+              currentStep < STEPS.length
+                ? handleNext
+                : form.handleSubmit(handlePublish)
+            }
+            disabled={isLoading}
+          >
+            {currentStep < STEPS.length ? (
+              <>
+                Next <ChevronRight className="w-4 h-4 ml-2" />
+              </>
+            ) : isLoading ? (
+              "Processing..."
+            ) : (
+              "🚀 Publish Petition"
+            )}
+          </Button>
+        </CardFooter>
+      </Form>
     </Card>
   );
-}
+};
 
 export default CreatePetitionFormV2;
