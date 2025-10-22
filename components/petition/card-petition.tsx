@@ -16,6 +16,8 @@ export const CardPetition = ({ petition }: { petition: PetitionMetadata }) => {
   const Icon = categoryInfo.icon;
   const timeAgo = formatDistanceToNow(petition.createdAt, { addSuffix: true });
 
+  console.log(petition);
+
   const shimmer = (w: number, h: number) => `
 <svg width="${w}" height="${h}" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>

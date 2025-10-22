@@ -173,7 +173,7 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi: CONTRACT_ABI_V2,
         functionName: "createPetition",
-        args: [url, 0, parsedTags, BigInt(start), BigInt(end), BigInt(data.targetSignatures || 0)],
+        args: [url, data.category, parsedTags, BigInt(start), BigInt(end), BigInt(data.targetSignatures || 0)],
       });
     } catch (err) {
       const msg = getReadableError(err);
@@ -387,7 +387,7 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
 
       {/* Step 4 (Review) */}
       <div className={currentStep === 4 ? "block space-y-4" : "hidden"}>
-        <div className="rounded-lg border p-6 space-y-6 bg-muted/30">
+        <div className="rounded-lg border p-6 space-y-6 bg-muted/10">
           <div className="flex items-center gap-2 mb-4">
             <CheckCircle2 className="w-5 h-5 text-primary" />
             <h3 className="font-semibold text-lg">Review Your Petition</h3>

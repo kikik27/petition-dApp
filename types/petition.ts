@@ -51,7 +51,7 @@ export interface IPetitionStore {
 }
 
 export interface Signer {
+  signer: string;
+  timestamp: bigint;
   message: string;
-  timestamp: number;
-  signerAddress: string;
 }

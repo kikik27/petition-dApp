@@ -1,18 +1,36 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { PetitionService } from "@/services/petition";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import {
+  Loader2,
+  Users,
+  Calendar,
+  Target,
+  CheckCircle2,
+  Clock,
+  TrendingUp,
+  Award,
+  Share2,
+  Flag,
+  MessageSquare,
+  Heart
+} from "lucide-react";
 import Image from "next/image";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import useTheme from "@/stores/theme";
 import { CONTRACT_ABI_V2, CONTRACT_ABI_V3, CONTRACT_ADDRESS } from "@/constants";
-import { Signer } from "@/types";
+import { PetitionMetadata, Signer } from "@/types";
+import { formatDistanceToNow } from "date-fns";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { getCategoryInfo, getStateInfo } from "@/lib/utils";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 interface PetitionDetailProps {
   tokenId: string;
@@ -20,22 +38,58 @@ interface PetitionDetailProps {
 
 export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
   const { address } = useAccount();
-
-  const [petition, setPetition] = useState<any | null>(null);
+  const [petition, setPetition] = useState<PetitionMetadata | null>(null);
   const [signers, setSigners] = useState<Signer[]>([]);
-
+  const hasSigned = signers.some(signer => signer.signer.toLowerCase() === address?.toLowerCase());
   const { writeContract, data: hash, isPending, error: writeError } = useWriteContract();
   const { setLoading, setLoadingMessage, setLoadingDescription } = useTheme();
   const [signing, setSigning] = useState(false);
   const [message, setMessage] = useState("");
+  const [currentSlide, setCurrentSlide] = useState(0);
 
+  // Check if user has already signed
+  // const { data: hasSigned } = useReadContract({
+  //   address: CONTRACT_ADDRESS as `0x${string}`,
+  //   abi: CONTRACT_ABI_V2,
+  //   functionName: "hasUserSigned",
+  //   args: [tokenId, address],
+  // });
+
+  // console.log(hasSigned)
+
+  // const { data: claimed } = useReadContract({
+  //   address: CONTRACT_ADDRESS as `0x${string}`,
+  //   abi: CONTRACT_ABI_V3,
+  //   functionName: "completionClaimed",
+  //   args: [tokenId, address],
+  // });
+
+  // const { data: bonus } = useReadContract({
+  //   address: CONTRACT_ADDRESS as `0x${string}`,
+  //   abi: CONTRACT_ABI_V3,
+  //   functionName: "bonusPerSigner",
+  //   args: [tokenId],
+  // });
+  
   useEffect(() => {
     loadPetition();
   }, [tokenId]);
 
   useEffect(() => {
     PetitionService.getSigners(BigInt(tokenId)).then(setSigners);
+
   }, [tokenId]);
+
+  // Auto-slide for signers carousel
+  useEffect(() => {
+    if (signers.length <= 4) return;
+
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % Math.max(1, signers.length - 3));
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [signers.length]);
 
   async function loadPetition() {
     try {
@@ -59,6 +113,11 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
       return;
     }
 
+    if (hasSigned) {
+      toast.info("You've already signed this petition");
+      return;
+    }
+
     try {
       setSigning(true);
       setLoading(true);
@@ -73,122 +132,448 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
       });
 
       setLoadingDescription("Transaction confirmed. Updating petition data...");
-      toast.success("Petition signed successfully");
+      toast.success("Petition signed successfully", {
+        description: "Thank you for your support!"
+      });
       setMessage("");
-
       await loadPetition();
-
+      await PetitionService.getSigners(BigInt(tokenId)).then(setSigners);
     } catch (error: any) {
       const msg = error?.shortMessage || error?.message || "Failed to sign petition";
       toast.error("Transaction failed", { description: msg });
       console.error("Error signing petition:", error);
     } finally {
       setSigning(false);
+      setLoading(false);
     }
   }
 
-  async function claimReward() {
-    const { data: hasSigned } = useReadContract({
-      address: CONTRACT_ADDRESS,
-      abi: CONTRACT_ABI_V3,
-      functionName: "hasSigned",
-      args: [tokenId, address], // (tokenId, userAddress)
-    });
+  // async function claimReward() {
+  //   try {
+  //     setLoading(true);
+  //     setLoadingMessage("Claiming reward...");
 
-    const { data: claimed } = useReadContract({
-      address: CONTRACT_ADDRESS,
-      abi: CONTRACT_ABI_V3,
-      functionName: "completionClaimed",
-      args: [tokenId, address],
-    });
+  //     writeContract({
+  //       address: CONTRACT_ADDRESS as `0x${string}`,
+  //       abi: CONTRACT_ABI_V3,
+  //       functionName: "claimCompletionBonus",
+  //       args: [tokenId],
+  //     });
 
-    const { data: bonus } = useReadContract({
-      address: CONTRACT_ADDRESS,
-      abi: CONTRACT_ABI_V3,
-      functionName: "bonusPerSigner",
-      args: [tokenId],
-    });
-
-  }
+  //     toast.success("Reward claimed successfully!");
+  //   } catch (error: any) {
+  //     toast.error("Failed to claim reward", {
+  //       description: error?.shortMessage || error?.message
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
 
   if (!petition) {
     return (
-      <div className="text-center py-10 text-gray-500">
-        Petition not found.
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
+          <p className="text-muted-foreground">Loading petition...</p>
+        </div>
       </div>
     );
   }
+  const isCompleted = petition.state === "COMPLETED";
+  const isExpired = petition.state === "CANCELLED" || (petition.endDate && new Date() > new Date(petition.endDate));
+  const canSign = !hasSigned && !isCompleted && !isExpired;
+  const progressPercentage = parseFloat(petition.progress);
+
+  const categoryInfo = getCategoryInfo(petition.category);
+  const stateInfo = getStateInfo(petition.state);
+  const Icon = categoryInfo.icon;
 
   return (
-    <div className="mx-auto max-w-4xl p-4 space-y-4 text-gray-200">
-      <h1 className="text-3xl font-bold text-center">{petition.title}</h1>
-      <div className="my-4 relative w-full max-w-2xl mx-auto">
-        <Image
-          src={petition.image}
-          alt={petition.title}
-          width={800}
-          height={400}
-          className="rounded-xl w-full aspect-video object-contain bg-gray-900/90"
-          priority
-        />
+    <div className="mx-auto max-w-5xl p-4 md:p-6 space-y-8">
+      {/* Hero Section */}
+      <div className="relative">
+        <div className="relative w-full aspect-[21/9] rounded-2xl overflow-hidden border-2 border-gray-900 shadow-2xl">
+          <Image
+            src={petition.image}
+            alt={petition.title}
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+          {/* Status Badge */}
+          <div className="absolute top-4 right-4">
+            <Badge className={stateInfo.color}>{stateInfo.label}</Badge>
+          </div>
+
+          {/* Title Overlay */}
+          <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
+            <h1 className="text-xl md:text-4xl font-bold text-white drop-shadow-lg mb-3">
+              {petition.title}
+            </h1>
+            <div className="flex flex-wrap items-center gap-3 text-white/90">
+              <Badge className={categoryInfo.color}>
+                <Icon className="w-3 h-3 mr-1 inline" /> {categoryInfo.label}
+              </Badge>
+              <div className="flex items-center gap-2 text-sm">
+                <Users className="w-4 h-4" />
+                <span>{petition.signatureCount} supporters</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {signers.length > 0 && (
-        <div className="mt-4">
-          <h2 className="text-2xl font-bold">Signers</h2>
-          <ul className="list-disc list-inside">
-            {signers.map((signer) => (
-              <li key={signer.timestamp}>{signer.message}</li>
-            ))}
-          </ul>
+      {/* Main Content Grid */}
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Left Column - Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+
+          {/* Description */}
+          <Card className="bg-black/10 shadow-lg !gap-2">
+            <CardHeader>
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <MessageSquare className="w-6 h-6 text-primary" />
+                About This Petition
+              </h2>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                {petition.description}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Progress Section */}
+          <Card className="bg-black/10 shadow-lg">
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold text-lg">Petition Progress</h3>
+                </div>
+                <span className="text-xl font-bold text-primary">
+                  {petition.progress}%
+                </span>
+              </div>
+
+              <Progress value={progressPercentage} className="h-3" />
+
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  <strong className="text-foreground">{petition.signatureCount}</strong> signatures
+                </span>
+                <span className="text-muted-foreground flex items-center gap-1">
+                  <Target className="w-4 h-4" />
+                  Goal: <strong className="text-foreground">{petition.targetSignatures}</strong>
+                </span>
+              </div>
+
+              {isCompleted && (
+                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 flex items-center gap-3">
+                  <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-green-700 dark:text-green-400">
+                      Victory! This petition has succeeded! 🎉
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Thank you to all {petition.signatureCount} supporters who made this possible.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Signers Carousel */}
+          {signers.length > 0 && (
+            <Card className="bg-black/10 shadow-lg overflow-hidden">
+              <CardHeader>
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <Heart className="w-5 h-5 text-red-500" />
+                  Recent Supporters ({signers.length})
+                </h2>
+              </CardHeader>
+              <CardContent className="pb-6">
+                <div className="relative overflow-hidden">
+                  <div
+                    className="flex gap-4 transition-transform duration-500 ease-in-out"
+                    style={{ transform: `translateX(-${currentSlide * (100 / Math.min(4, signers.length))}%)` }}
+                  >
+                    {signers.map((signer, index) => (
+                      <div
+                        key={index}
+                        className="min-w-[calc(100%/4-12px)] md:min-w-[calc(100%/4-12px)]"
+                      >
+                        <Card className="bg-muted/10 border h-full">
+                          <CardContent className="p-4 space-y-3">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="w-10 h-10 border-2 border-primary/20">
+                                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                                  {signer?.signer ? signer.signer.slice(2, 4).toUpperCase() : '??'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-mono text-muted-foreground truncate">
+                                  {signer?.signer ? `${signer.signer.slice(0, 6)}...${signer.signer.slice(-4)}` : 'Unknown'}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {signer?.timestamp ? formatDistanceToNow(new Date(Number(signer.timestamp) * 1000), { addSuffix: true }) : 'Unknown time'}
+                                </p>
+                              </div>
+                            </div>
+                            {signer.message && (
+                              <p className="text-sm text-muted-foreground uppercase line-clamp-2">
+                                "{signer.message}"
+                              </p>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Carousel Indicators */}
+                  {signers.length > 4 && (
+                    <div className="flex justify-center gap-2 mt-4">
+                      {Array.from({ length: Math.max(1, signers.length - 3) }).map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setCurrentSlide(idx)}
+                          className={`w-2 h-2 rounded-full transition-all ${currentSlide === idx
+                            ? 'bg-primary w-6'
+                            : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                            }`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
-      )}
 
-      <Card className="bg-gray-900 border !py-0 border-gray-800 text-gray-200 shadow-xl rounded-xl overflow-hidden max-w-2xl mx-auto">
-        <CardHeader>
-          <p className="text-gray-400 text-sm">
-            Created by {petition.creator.slice(0, 6)}...{petition.creator.slice(-4)}
-          </p>
-          <p className="text-gray-500 text-sm">
-            {petition.category} — {petition.state}
-          </p>
-        </CardHeader>
+        {/* Right Column - Actions & Info */}
+        <div className="space-y-6">
+          {/* Sign Petition Card */}
+          {canSign ? (
+            <Card className="shadow-xl bg-black/10 !gap-3">
+              <CardHeader className="">
+                <h3 className="text-xl font-bold">Support This Petition</h3>
+                <p className="text-sm text-muted-foreground">
+                  Add your voice to this important cause
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Textarea
+                  placeholder="Share why this matters to you (optional)..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  className="min-h-[100px] resize-none"
+                  maxLength={500}
+                />
+                <p className="text-xs text-muted-foreground text-right">
+                  {message.length}/500 characters
+                </p>
+              </CardContent>
+              <CardFooter>
+                {!address ? (
+                  <ConnectButton.Custom>
+                    {({ openConnectModal }) => (
+                      <Button
+                        onClick={openConnectModal}
+                        className="w-full bg-gray-50/7 hover:bg-gray-50/3 p-4 border text-white"
+                      >
+                        <CheckCircle2 className="w-5 h-5 mr-2" />
+                        Connect Wallet
+                      </Button>
+                    )}
+                  </ConnectButton.Custom>
+                ) : (
+                  <Button
+                    disabled={signing}
+                    variant="outline"
+                    onClick={handleSign}
+                    className="w-full"
+                  >
+                    {signing ? (
+                      <>
+                        <Loader2 className="animate-spin w-5 h-5 mr-2" />
+                        Signing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-5 h-5 mr-2" />
+                        Sign Petition
+                      </>
+                    )}
+                  </Button>
+                )}
+              </CardFooter>
+            </Card>
+          ) : hasSigned ? (
+            <Card className="bg-green-500/10 shadow-xl">
+              <CardContent className="pt-6 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-10 h-10 text-green-500" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-green-700 dark:text-green-400 mb-2">
+                    You've Signed This!
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Thank you for your support. Share this petition to gather more signatures!
+                  </p>
+                </div>
+                {/* <Separator /> */}
+                {/* {isCompleted && typeof bonus === 'bigint' && !claimed && (
+                  <div className="space-y-3">
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                      <Award className="w-8 h-8 text-amber-500 mx-auto mb-2" />
+                      <p className="text-sm font-semibold text-center">
+                        Reward Available!
+                      </p>
+                      <p className="text-xs text-muted-foreground text-center mt-1">
+                        {bonus.toString()} tokens
+                      </p>
+                    </div>
+                    <Button onClick={claimReward} className="w-full" variant="outline">
+                      <Award className="w-4 h-4 mr-2" />
+                      Claim Reward
+                    </Button>
+                  </div>
+                )}
+                {Boolean(claimed) && (
+                  <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+                    <p className="text-sm text-center text-green-700 dark:text-green-400">
+                      ✨ Reward claimed!
+                    </p>
+                  </div>
+                )} */}
+              </CardContent>
+            </Card>
+          ) : (
+                <Card className="bg-black/10 shadow-xl">
+              <CardContent className="pt-6 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto">
+                  <Flag className="w-10 h-10 text-green-500" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-2">
+                    {isCompleted ? "Petition Completed" : "Petition Closed"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {isCompleted
+                      ? "This petition has reached its goal and is now closed."
+                      : "This petition has expired and is no longer accepting signatures."
+                    }
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-        <CardContent>
-          <p className="text-gray-300 whitespace-pre-line leading-relaxed">
-            {petition.description}
-          </p>
-          <div className="mt-6">
-            <Progress value={parseFloat(petition.progress)} className="h-2" />
-            <p className="text-sm text-gray-400 mt-1">
-              {petition.signatureCount}/{petition.targetSignatures} signatures ({petition.progress}%)
-            </p>
-          </div>
-        </CardContent>
+          {/* Petition Info */}
+          <Card className="bg-black/10 shadow-lg">
+            <CardHeader>
+              <h3 className="font-bold">Petition Details</h3>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <Users className="w-5 h-5 text-muted-foreground mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Created by</p>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      {petition.creator.slice(0, 10)}...{petition.creator.slice(-8)}
+                    </p>
+                  </div>
+                </div>
 
-        <CardFooter className="flex flex-col gap-3">
-          <Textarea
-            placeholder="Add a message (optional)"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            className="bg-gray-800 border-gray-700 text-gray-100"
-          />
+                <Separator />
 
-          <Button
-            disabled={signing}
-            onClick={handleSign}
-            className="bg-green-600 hover:bg-green-700 text-white w-full"
-          >
-            {signing ? (
-              <>
-                <Loader2 className="animate-spin w-4 h-4 mr-2" /> Signing...
-              </>
-            ) : (
-              "Sign Petition"
-            )}
-          </Button>
-        </CardFooter>
-      </Card>
+                <div className="flex items-start gap-3">
+                  <Calendar className="w-5 h-5 text-muted-foreground mt-0.5" />
+                  <div className="flex-1 space-y-2">
+                    <div>
+                      <p className="text-sm font-medium">Start Date</p>
+                      <p className="text-xs text-muted-foreground">
+                        {petition.startDate ? new Date(petition.startDate).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        }) : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">End Date</p>
+                      <p className="text-xs text-muted-foreground">
+                        {petition.endDate ? new Date(petition.endDate).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        }) : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {petition.tags && petition.tags.length > 0 && (
+                  <>
+                    <Separator />
+                    <div>
+                      <p className="text-sm font-medium mb-2">Tags</p>
+                      <div className="flex flex-wrap gap-2">
+                        {petition.tags.map((tag: string, idx: number) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            #{tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Share Card */}
+          <Card className="bg-black/10 shadow-lg !gap-2">
+            <CardHeader>
+              <h3 className="font-bold flex items-center gap-2">
+                <Share2 className="w-5 h-5 text-primary" />
+                Share & Spread
+              </h3>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Help this petition reach more people
+              </p>
+
+              {/* QR Code */}
+              <div className="flex justify-center p-4 bg-white rounded-lg">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href)}`}
+                  alt="QR Code"
+                  width={150}
+                  height={150}
+                />
+              </div>
+
+              <Button variant="outline" className="w-full" onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                toast.success("Link copied to clipboard!");
+              }}>
+                <Share2 className="w-4 h-4 mr-2" />
+                Copy Link
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

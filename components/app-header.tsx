@@ -32,34 +32,34 @@ const AppHeader = () => {
             </div>
           </div>
 
-          {isConnected && (
+            {isConnected && (
             <nav className="hidden md:flex space-x-6 ml-10">
               <Link
-                href="/petitions"
-                className={`
-                text-gray-300 hover:text-white relative transition-all duration-300
-                ${isActive('/petitions')
-                  ? 'text-light-blue after:bg-blue-500 after:absolute after:bottom-0 after:top-10 after:left-0 after:w-full after:h-1 after:bg-primary-blue after:animate-pulse-glow after:rounded-full after:transition-all after:duration-300'
-                    : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
-                  }
+              href="/petitions"
+              className={`
+              text-gray-300 hover:text-white relative transition-all duration-300
+              ${isActive('/petitions')
+                ? 'text-light-blue after:bg-blue-500 after:absolute after:bottom-0 after:top-10 after:left-0 after:w-full after:h-1 after:bg-primary-blue after:animate-pulse-glow after:rounded-full after:transition-all after:duration-300'
+                : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
+                }
               `}
               >
-                Petitions
+              Petitions
               </Link>
               <Link
-                href="/petitions/create"
-                className={`
-                text-gray-300 hover:text-white relative transition-all duration-300
-                ${isActive('/petitions/create')
-                    ? 'text-light-blue after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary-blue after:shadow-glow-blue after:rounded-full after:transition-all after:duration-300'
-                    : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
-                  }
+              href="/petitions/create"
+              className={`
+              text-gray-300 hover:text-white relative transition-all duration-300
+              ${isActive('/petitions/create')
+                ? 'text-light-blue after:bg-blue-500 after:absolute after:bottom-0 after:top-10 after:left-0 after:w-full after:h-1 after:bg-primary-blue after:animate-pulse-glow after:rounded-full after:transition-all after:duration-300'
+                : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
+                }
               `}
               >
-                Create
+              Create
               </Link>
             </nav>
-          )}
+            )}
 
           {/* CTA Button */}
           <div className="hidden md:block">
@@ -139,7 +139,7 @@ const AppHeader = () => {
             <Button
 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className=" hover:text-white bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 hover:to-purple-700"
+              className=" bg-gray-50/7 hover:bg-gray-50/3 p-4 border text-white"
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </Button>
@@ -150,7 +150,37 @@ const AppHeader = () => {
         {isMenuOpen && (
           <div className="md:hidden">
             <div className="space-y-1 border-t border-gray-800 px-2 pb-3 pt-2 sm:px-3 block py-2 text-gray-300 hover:text-white">
-              <div className="px-3 py-2">
+              <div className="px-3 space-y-4 py-2">
+
+                {isConnected && (
+                  <nav className="hidden md:flex space-x-6 ml-10">
+                    <Link
+                      href="/petitions"
+                      className={`
+                text-gray-300 hover:text-white relative transition-all duration-300
+                ${isActive('/petitions')
+                          ? 'text-light-blue after:bg-blue-500 after:absolute after:bottom-0 after:top-10 after:left-0 after:w-full after:h-1 after:bg-primary-blue after:animate-pulse-glow after:rounded-full after:transition-all after:duration-300'
+                          : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
+                        }
+              `}
+                    >
+                      Petitions
+                    </Link>
+                    <Link
+                      href="/petitions/create"
+                      className={`
+                text-gray-300 hover:text-white relative transition-all duration-300
+                ${isActive('/petitions/create')
+                          ? 'text-light-blue after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary-blue after:shadow-glow-blue after:rounded-full after:transition-all after:duration-300'
+                          : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
+                        }
+              `}
+                    >
+                      Create
+                    </Link>
+                  </nav>
+                )}
+
                 <ConnectButton.Custom>
                   {
                     ({
@@ -162,7 +192,6 @@ const AppHeader = () => {
                       authenticationStatus,
                       mounted,
                     }) => {
-                      console.log({ account, chain });
                       // Note: If your app doesn't use authentication, you
                       // can remove all 'authenticationStatus' checks
                       const ready = mounted && authenticationStatus !== 'loading';
@@ -187,7 +216,7 @@ const AppHeader = () => {
                           {(() => {
                             if (!connected) {
                               return (
-                                <Button className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 hover:to-purple-700" onClick={openConnectModal} type="button">
+                                <Button className="bg-gray-50/7 hover:bg-gray-50/3 p-4 border text-white" onClick={openConnectModal} type="button">
                                   Connect Wallet
                                 </Button>
                               );
@@ -202,8 +231,15 @@ const AppHeader = () => {
                             }
 
                             return (
-                              <Button className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white hover:from-cyan-700 hover:to-purple-700" onClick={openAccountModal} type="button">
-                                {account.displayName}
+                              <Button className="bg-gray-50/7 hover:bg-gray-50/3 p-4 border text-white" onClick={openAccountModal} type="button">
+                                {chain.iconUrl && (
+                                  <Image
+                                    alt={chain.name ?? 'Chain icon'}
+                                    src={chain.iconUrl}
+                                    width={18}
+                                    height={18}
+                                  />
+                                )}{account.displayName}
                                 {account.displayBalance
                                   ? ` (${account.displayBalance})`
                                   : ''}

@@ -88,7 +88,7 @@ export const PetitionService = {
     return (await publicClient.readContract({
       address: CONTRACT_ADDRESS as `0x${string}`,
       abi: CONTRACT_ABI_V2,
-      functionName: "getSigners",
+      functionName: "getSignatures",
       args: [tokenId],
     })) as Signer[];
   }
