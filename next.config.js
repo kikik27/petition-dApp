@@ -3,7 +3,7 @@ const nextConfig = {
   compress: true,
   reactStrictMode: true,
   turbopack: {
-    
+
     resolveExtensions: ['.mdx', '.tsx', '.ts', '.jsx', '.js', '.json'],
   },
   webpack: (config) => {
@@ -13,9 +13,26 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: "https", // or https
-        hostname: "gateway.pinata.cloud", // Allow all hostnames
+        protocol: "https",
+        hostname: "gateway.pinata.cloud",
       },
+      {
+        protocol: "https",
+        hostname: "ipfs.io",
+      },
+      {
+        protocol: "https",
+        hostname: "cloudflare-ipfs.com",
+      },
+      {
+        protocol: "https",
+        hostname: "api.qrserver.com",
+        pathname: "/v1/create-qr-code/**",
+      },
+      {
+        protocol: "https",
+        hostname: "api.dicebear.com",
+      }
     ],
   },
 };

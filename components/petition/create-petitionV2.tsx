@@ -6,6 +6,7 @@ import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { toast } from "sonner";
 import { uploadFile, uploadMetadata } from "@/lib/ipfs";
 import { CONTRACT_ABI_V2, CONTRACT_ADDRESS, PetitionCategory } from "@/constants/petition";
+import { publicClient } from "@/lib/wagmi-client";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Form } from "@/components/ui/form";
@@ -20,6 +21,7 @@ import { Separator } from "../ui/separator";
 import Image from "next/image";
 import { CheckCircle2, Circle, ChevronRight, ChevronLeft, X, FileText } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { ConfirmDialog } from "../global/custom-confirmDialog";
 
 const STEPS = [
   { id: 1, title: "Basic Info", description: "Title & Description" },
@@ -70,9 +72,11 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [parsedTags, setParsedTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isConfirm, setisConfirm] = useState(false);
 
   const { writeContract, data: hash, isPending, error: writeError } = useWriteContract();
   const { isSuccess, isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
+  const [waitingForEvent, setWaitingForEvent] = useState(false);
 
   const form = useForm<PetitionFormValues>({
     resolver: zodResolver(FormSchema),
@@ -131,9 +135,7 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
   };
 
   const handlePublish = async (data: PetitionFormValues) => {
-    const confirmed = confirmToast("⚠️ WARNING: Creating is IRREVERSIBLE!");
-    if (!confirmed) return;
-
+    setisConfirm(false);
     try {
       setIsSubmitting(true);
       setLoading(true);
@@ -170,46 +172,123 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
       const start = Math.floor(new Date(data.startDate).getTime() / 1000);
       const end = Math.floor(new Date(data.endDate).getTime() / 1000);
 
-      await writeContract({
+      setWaitingForEvent(true);
+      setLoadingMessage("Transaction in Progress...");
+      setLoadingDescription("Waiting for blockchain confirmation");
+
+      // writeContract will handle errors via useEffect(writeError)
+      writeContract({
         address: CONTRACT_ADDRESS as `0x${string}`,
         abi: CONTRACT_ABI_V2,
         functionName: "createPetition",
-        args: [url, data.category, parsedTags, BigInt(start), BigInt(end), BigInt(data.targetSignatures || 0)],
+        args: [url, Number(data.category), parsedTags, BigInt(start), BigInt(end), BigInt(data.targetSignatures || 0)],
       });
     } catch (err) {
-      const msg = getReadableError(err);
-      isUserRejected(err)
-        ? toast.info("Transaction cancelled", { description: "You rejected the request." })
-        : toast.error("Transaction failed", { description: msg });
-      setLoadingMessage("Transaction Failed");
-      setLoadingDescription(msg);
-    } finally {
+      // This only catches IPFS upload errors, not writeContract errors
+      console.log("IPFS or preparation error:", err);
+
+      const friendlyMsg = getReadableError(err);
+      toast.error("Upload Failed", {
+        description: friendlyMsg
+      });
+
+      // Reset all loading states immediately on error
       setIsSubmitting(false);
       setLoading(false);
+      setWaitingForEvent(false);
+      setLoadingMessage("");
+      setLoadingDescription("");
     }
   };
 
   // === Effects ===
+  // Listen to PetitionCreated event from smart contract
   useEffect(() => {
-    if (isSuccess && hash) {
-      toast.success("Petition created successfully!", { description: "Your petition is live on block space-y-4chain." });
-      form.reset();
-      setParsedTags([]);
-      setCurrentStep(1);
-      setImagePreview(null);
-      setLoading(false);
-      if (onSuccess) onSuccess(hash);
-    }
-  }, [isSuccess, hash, form, onSuccess, setLoading]);
+    if (!hash || !isSuccess) return;
+
+    const listenForEvent = async () => {
+      try {
+        setLoadingMessage("Waiting for Event...");
+        setLoadingDescription("Listening to smart contract event PetitionCreated");
+
+        const unwatch = publicClient.watchContractEvent({
+          address: CONTRACT_ADDRESS as `0x${string}`,
+          abi: CONTRACT_ABI_V2,
+          eventName: "PetitionCreated",
+          onLogs: (logs: any[]) => {
+            const log = logs[0];
+            if (log && log.transactionHash === hash) {
+              const tokenId = log.args.tokenId?.toString();
+
+              toast.success("Petition created successfully!", {
+                description: `Your petition #${tokenId} is live on blockchain.`
+              });
+
+              form.reset();
+              setParsedTags([]);
+              setCurrentStep(1);
+              setImagePreview(null);
+              setLoading(false);
+              setIsSubmitting(false);
+              setWaitingForEvent(false);
+
+              if (onSuccess && tokenId) onSuccess(tokenId);
+              unwatch();
+            }
+          },
+        });
+
+        // Timeout after 30 seconds
+        setTimeout(() => {
+          unwatch();
+          if (waitingForEvent) {
+            toast.warning("Event timeout", {
+              description: "Transaction confirmed but event not received. Please refresh."
+            });
+            setLoading(false);
+            setIsSubmitting(false);
+            setWaitingForEvent(false);
+          }
+        }, 30000);
+      } catch (err) {
+        console.error("Error listening for event:", err);
+        setLoading(false);
+        setIsSubmitting(false);
+        setWaitingForEvent(false);
+      }
+    };
+
+    listenForEvent();
+  }, [hash, isSuccess, form, onSuccess, setLoading, waitingForEvent]);
 
   useEffect(() => {
     if (writeError) {
-      const msg = getReadableError(writeError);
-      toast.error("Transaction failed", { description: msg });
+      console.log("Write error detected:", writeError); // Debug log
+
+      const errorMsg = writeError?.message || "";
+      const isRejected = errorMsg.includes("User rejected") ||
+        errorMsg.includes("user rejected") ||
+        errorMsg.includes("User denied") ||
+        (writeError as any)?.code === 4001 ||
+        (writeError as any)?.code === "ACTION_REJECTED";
+
+      if (isRejected) {
+        toast.info("Transaction Cancelled", {
+          description: "You cancelled the transaction."
+        });
+      } else {
+        const friendlyMsg = getReadableError(writeError);
+        toast.error("Transaction Failed", {
+          description: friendlyMsg
+        });
+      }
+
+      // Reset all loading states on write error
       setIsSubmitting(false);
       setLoading(false);
-      setLoadingMessage("Transaction Failed");
-      setLoadingDescription(msg);
+      setWaitingForEvent(false);
+      setLoadingMessage("");
+      setLoadingDescription("");
     }
   }, [writeError, setLoading, setLoadingMessage, setLoadingDescription]);
 
@@ -490,60 +569,79 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
   );
 
   return (
-    <Card className="max-w-4xl mx-auto bg-black/10">
-      <CardHeader>
-        <CardTitle>Create New Petition</CardTitle>
-        <CardDescription>Complete all steps to publish your petition.</CardDescription>
-      </CardHeader>
-      <div className="px-6">
-        <div className="flex items-center justify-between">
-          {STEPS.map((s, i) => (
-            <React.Fragment key={s.id}>
-              <div className="flex flex-col items-center flex-1">
-                <div
-                  className={`w-10 h-10 flex items-center justify-center rounded-full border-2 ${currentStep >= s.id ? "border-primary text-primary" : "border-muted text-muted-foreground"
-                    }`}
-                >
-                  {currentStep > s.id ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
+    <>
+      <Card className="max-w-4xl mx-auto bg-black/10">
+        <CardHeader>
+          <CardTitle>Create New Petition</CardTitle>
+          <CardDescription>Complete all steps to publish your petition.</CardDescription>
+        </CardHeader>
+        <div className="px-6">
+          <div className="flex items-center justify-between">
+            {STEPS.map((s, i) => (
+              <React.Fragment key={s.id}>
+                <div className="flex flex-col items-center flex-1">
+                  <div
+                    className={`w-10 h-10 flex items-center justify-center rounded-full border-2 ${currentStep >= s.id ? "border-primary text-primary" : "border-muted text-muted-foreground"
+                      }`}
+                  >
+                    {currentStep > s.id ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
+                  </div>
+                  <p className="text-sm mt-1">{s.title}</p>
                 </div>
-                <p className="text-sm mt-1">{s.title}</p>
-              </div>
-              {i < STEPS.length - 1 && <div className="flex-1 h-0.5 bg-muted mx-2" />}
-            </React.Fragment>
-          ))}
+                {i < STEPS.length - 1 && <div className="flex-1 h-0.5 bg-muted mx-2" />}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <Separator />
-
-      <Form {...form}>
-        <CardContent>{StepSections}</CardContent>
         <Separator />
-        <CardFooter className="flex justify-between">
-          <Button onClick={handlePrev} variant="outline" disabled={currentStep === 1 || isLoading}>
-            <ChevronLeft className="w-4 h-4 mr-2" /> Previous
-          </Button>
-          <Button
-            onClick={
-              currentStep < STEPS.length
-                ? handleNext
-                : form.handleSubmit(handlePublish)
-            }
-            disabled={isLoading}
-          >
-            {currentStep < STEPS.length ? (
-              <>
-                Next <ChevronRight className="w-4 h-4 ml-2" />
-              </>
-            ) : isLoading ? (
-              "Processing..."
-            ) : (
-              "🚀 Publish Petition"
-            )}
-          </Button>
-        </CardFooter>
-      </Form>
-    </Card>
+
+        <Form {...form}>
+          <CardContent>{StepSections}</CardContent>
+          <Separator />
+          <CardFooter className="flex justify-between">
+            <Button onClick={handlePrev} variant="outline" disabled={currentStep === 1 || isLoading}>
+              <ChevronLeft className="w-4 h-4 mr-2" /> Previous
+            </Button>
+            <Button
+              variant='outline'
+              onClick={() => {
+                if (currentStep < STEPS.length) {
+                  handleNext();
+                } else {
+                  setisConfirm(true);
+                }
+              }}
+              disabled={isLoading}
+            >
+              {currentStep < STEPS.length ? (
+                <>
+                  Next <ChevronRight className="w-4 h-4 ml-2" />
+                </>
+              ) : isLoading ? (
+                "Processing..."
+              ) : (
+                "Publish Petition 🚀"
+              )}
+            </Button>
+          </CardFooter>
+        </Form>
+      </Card>
+
+      <ConfirmDialog
+        variant="warning"
+        title="🚀 Ready to Publish?"
+        description="Your petition will be permanently stored on the blockchain. This action is irreversible and will require a transaction fee."
+        confirmLabel="Yes, Publish Now"
+        cancelLabel="Not Yet"
+        open={isConfirm}
+        onCancel={() => setisConfirm(false)}
+        onConfirm={() => {
+          setisConfirm(false);
+          form.handleSubmit(handlePublish)();
+        }}
+      />
+    </>
   );
 };
 

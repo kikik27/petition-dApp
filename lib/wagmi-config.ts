@@ -1,6 +1,6 @@
 import { cookieStorage, createStorage } from 'wagmi';
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { sepolia } from 'wagmi/chains';
+import { baseSepolia, hardhat, sepolia } from 'wagmi/chains';
 
 // Create a single, stable wagmi config for the whole app.
 // Keeping this outside of any React component prevents re-creation
@@ -8,7 +8,7 @@ import { sepolia } from 'wagmi/chains';
 export const wagmiConfig = getDefaultConfig({
   appName: 'Mandat',
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
-  chains: [sepolia],
+  chains: [baseSepolia],
   ssr: true,
   storage: createStorage({
     storage: cookieStorage,

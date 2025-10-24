@@ -1,7 +1,9 @@
 import { createPublicClient, http } from "viem";
-import { sepolia } from "viem/chains";
+import { baseSepolia } from "viem/chains";
 
+// ⚠️ IMPORTANT: Must match the chain in wagmi-config.ts
+// Currently using Base Sepolia (chainId: 84532)
 export const publicClient = createPublicClient({
-  chain: sepolia,
+  chain: baseSepolia,
   transport: http(),
 });

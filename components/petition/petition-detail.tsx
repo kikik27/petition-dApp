@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { PetitionService } from "@/services/petition";
+import { publicClient } from "@/lib/wagmi-client";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,10 @@ import {
   Share2,
   Flag,
   MessageSquare,
-  Heart
+  Heart,
+  FileText,
+  Download,
+  ExternalLink
 } from "lucide-react";
 import Image from "next/image";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
@@ -44,39 +48,16 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
   const { writeContract, data: hash, isPending, error: writeError } = useWriteContract();
   const { setLoading, setLoadingMessage, setLoadingDescription } = useTheme();
   const [signing, setSigning] = useState(false);
+  const [waitingForEvent, setWaitingForEvent] = useState(false);
   const [message, setMessage] = useState("");
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Check if user has already signed
-  // const { data: hasSigned } = useReadContract({
-  //   address: CONTRACT_ADDRESS as `0x${string}`,
-  //   abi: CONTRACT_ABI_V2,
-  //   functionName: "hasUserSigned",
-  //   args: [tokenId, address],
-  // });
-
-  // console.log(hasSigned)
-
-  // const { data: claimed } = useReadContract({
-  //   address: CONTRACT_ADDRESS as `0x${string}`,
-  //   abi: CONTRACT_ABI_V3,
-  //   functionName: "completionClaimed",
-  //   args: [tokenId, address],
-  // });
-
-  // const { data: bonus } = useReadContract({
-  //   address: CONTRACT_ADDRESS as `0x${string}`,
-  //   abi: CONTRACT_ABI_V3,
-  //   functionName: "bonusPerSigner",
-  //   args: [tokenId],
-  // });
-  
   const loadPetition = useCallback(async () => {
     try {
       setLoading(true);
       setLoadingMessage("Loading petition...");
       setLoadingDescription("Fetching petition details from the blockchain.");
-      const data = await PetitionService.getPetitionById(BigInt(tokenId));
+      const data = await PetitionService.getPetitionById(tokenId);
       setPetition(data);
     } catch (error) {
       toast.error("Failed to load petition", {
@@ -92,8 +73,10 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
   }, [loadPetition]);
 
   useEffect(() => {
-    PetitionService.getSigners(BigInt(tokenId)).then(setSigners);
-  }, [tokenId]);
+    if (petition?.id) {
+      PetitionService.getSigners(petition.id).then(setSigners);
+    }
+  }, [petition?.id]);
 
   // Auto-slide for signers carousel
   useEffect(() => {
@@ -106,22 +89,6 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
     return () => clearInterval(interval);
   }, [signers.length]);
 
-  // async function loadPetition() {
-  //   try {
-  //     setLoading(true);
-  //     setLoadingMessage("Loading petition...");
-  //     setLoadingDescription("Fetching petition details from the blockchain.");
-  //     const data = await PetitionService.getPetitionById(BigInt(tokenId));
-  //     setPetition(data);
-  //   } catch (error) {
-  //     toast.error("Failed to load petition", {
-  //       description: error instanceof Error ? error.message : String(error),
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }
-
   async function handleSign() {
     if (!address) {
       toast.error("Please connect your wallet first");
@@ -133,57 +100,122 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
       return;
     }
 
-    try {
-      setSigning(true);
-      setLoading(true);
-      setLoadingMessage("Signing petition...");
-      setLoadingDescription("Please confirm the transaction in your wallet.");
-
-      writeContract({
-        address: CONTRACT_ADDRESS as `0x${string}`,
-        abi: CONTRACT_ABI_V2,
-        functionName: "signPetition",
-        args: [tokenId, message],
-      });
-
-      setLoadingDescription("Transaction confirmed. Updating petition data...");
-      toast.success("Petition signed successfully", {
-        description: "Thank you for your support!"
-      });
-      setMessage("");
-      await loadPetition();
-      await PetitionService.getSigners(BigInt(tokenId)).then(setSigners);
-    } catch (error: any) {
-      const msg = error?.shortMessage || error?.message || "Failed to sign petition";
-      toast.error("Transaction failed", { description: msg });
-      console.error("Error signing petition:", error);
-    } finally {
-      setSigning(false);
-      setLoading(false);
+    if (!petition?.id) {
+      toast.error("Petition ID not found");
+      return;
     }
+
+    setSigning(true);
+    setLoading(true);
+    setWaitingForEvent(true);
+    setLoadingMessage("Signing petition...");
+    setLoadingDescription("Please confirm the transaction in your wallet.");
+
+    // Use petition.id (bytes32) not tokenId
+    writeContract({
+      address: CONTRACT_ADDRESS as `0x${string}`,
+      abi: CONTRACT_ABI_V2,
+      functionName: "signPetition",
+      args: [petition.id as `0x${string}`, message || ""],
+    });
   }
 
-  // async function claimReward() {
-  //   try {
-  //     setLoading(true);
-  //     setLoadingMessage("Claiming reward...");
+  // Listen to PetitionSigned event
+  useEffect(() => {
+    if (!hash || !waitingForEvent) return;
 
-  //     writeContract({
-  //       address: CONTRACT_ADDRESS as `0x${string}`,
-  //       abi: CONTRACT_ABI_V3,
-  //       functionName: "claimCompletionBonus",
-  //       args: [tokenId],
-  //     });
+    const listenForSignEvent = async () => {
+      try {
+        setLoadingMessage("Waiting for Event...");
+        setLoadingDescription("Listening to smart contract event PetitionSigned");
 
-  //     toast.success("Reward claimed successfully!");
-  //   } catch (error: any) {
-  //     toast.error("Failed to claim reward", {
-  //       description: error?.shortMessage || error?.message
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }
+        const unwatch = publicClient.watchContractEvent({
+          address: CONTRACT_ADDRESS as `0x${string}`,
+          abi: CONTRACT_ABI_V2,
+          eventName: "PetitionSigned",
+          onLogs: async (logs: any[]) => {
+            const log = logs[0];
+            if (log && log.transactionHash === hash) {
+              const signatureCount = log.args.signatureCount?.toString();
+
+              toast.success("Petition signed successfully!", {
+                description: `Thank you for your support! Total signatures: ${signatureCount}`
+              });
+
+              setMessage("");
+              setLoading(false);
+              setSigning(false);
+              setWaitingForEvent(false);
+
+              // Reload petition and signers
+              await loadPetition();
+              if (petition?.id) {
+                await PetitionService.getSigners(petition.id).then(setSigners);
+              }
+
+              unwatch();
+            }
+          },
+        });
+
+        // Timeout after 30 seconds
+        setTimeout(() => {
+          unwatch();
+          if (waitingForEvent) {
+            toast.warning("Event timeout", {
+              description: "Transaction confirmed but event not received. Please refresh."
+            });
+            setLoading(false);
+            setSigning(false);
+            setWaitingForEvent(false);
+          }
+        }, 30000);
+      } catch (err) {
+        console.error("Error listening for sign event:", err);
+        setLoading(false);
+        setSigning(false);
+        setWaitingForEvent(false);
+      }
+    };
+
+    listenForSignEvent();
+  }, [hash, waitingForEvent, tokenId, loadPetition, setLoading, setLoadingMessage, setLoadingDescription]);
+
+  // Handle write errors from smart contract
+  useEffect(() => {
+    if (writeError) {
+      console.log("Write error detected:", writeError); // Debug log
+
+      // Check if user rejected the transaction
+      const errorMsg = writeError?.message || "";
+      const isRejected = errorMsg.includes("User rejected") ||
+        errorMsg.includes("user rejected") ||
+        errorMsg.includes("User denied") ||
+        (writeError as any)?.code === 4001 ||
+        (writeError as any)?.code === "ACTION_REJECTED";
+
+      if (isRejected) {
+        toast.info("Transaction Cancelled", {
+          description: "You cancelled the transaction."
+        });
+      } else {
+        // Use getReadableError for user-friendly messages
+        const { getReadableError } = require("@/lib/utils");
+        const friendlyMsg = getReadableError(writeError);
+
+        toast.error("Transaction Failed", {
+          description: friendlyMsg
+        });
+      }
+
+      // Reset all loading states
+      setSigning(false);
+      setLoading(false);
+      setWaitingForEvent(false);
+      setLoadingMessage("");
+      setLoadingDescription("");
+    }
+  }, [writeError, setLoading, setLoadingMessage, setLoadingDescription]);
 
   if (!petition) {
     return (
@@ -260,6 +292,69 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
               </p>
             </CardContent>
           </Card>
+
+          {/* Supporting Documents (if any) */}
+          {petition.documents && petition.documents.length > 0 && (
+            <Card className="bg-black/10 shadow-lg">
+              <CardHeader>
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <FileText className="w-6 h-6 text-primary" />
+                  Supporting Documents ({petition.documents.length})
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Additional materials and evidence supporting this petition
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {petition.documents.map((doc, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-4 rounded-lg border bg-muted/5 hover:bg-muted/10 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-5 h-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{doc.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Uploaded {new Date(doc.uploadedAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => window.open(doc.url, '_blank')}
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = doc.url;
+                          link.download = doc.name;
+                          link.target = '_blank';
+                          link.click();
+                        }}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Progress Section */}
           <Card className="bg-black/10 shadow-lg">
@@ -422,7 +517,7 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
                     ) : (
                       <>
                         <CheckCircle2 className="w-5 h-5 mr-2" />
-                    You&apos;ve Signed This!
+                        Sign Petition
                       </>
                     )}
                   </Button>
@@ -471,7 +566,7 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
               </CardContent>
             </Card>
           ) : (
-                <Card className="bg-black/10 shadow-xl">
+            <Card className="bg-black/10 shadow-xl">
               <CardContent className="pt-6 text-center space-y-4">
                 <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto">
                   <Flag className="w-10 h-10 text-green-500" />
