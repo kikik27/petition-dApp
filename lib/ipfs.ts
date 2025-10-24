@@ -3,7 +3,7 @@
 // Client-side helper for IPFS operations via Next.js API
 // ==================================================
 
-import { DocumentMetadata, FetchResult, FileUploadResult, MultipleFilesUploadResult, PetitionData, PetitionUploadResult, StatusResult, UploadProgress, UploadResult } from "@/types";
+import { DocumentMetadata, FetchResult, FileUploadResult, IPFSPetitionData, MultipleFilesUploadResult, PetitionUploadResult, StatusResult, UploadProgress, UploadResult } from "@/types";
 
 
 /**
@@ -86,7 +86,7 @@ export async function uploadMultipleFiles(files: File[]): Promise<MultipleFilesU
 /**
  * Upload complete petition (metadata + files)
  */
-export async function uploadCompletePetition(petitionData: PetitionData): Promise<PetitionUploadResult> {
+export async function uploadCompletePetition(petitionData: IPFSPetitionData): Promise<PetitionUploadResult> {
   try {
     const formData = new FormData();
 
@@ -186,7 +186,7 @@ export function ipfsToGateway(ipfsUri: string, gateway: string = 'https://nftsto
  * Upload petition with progress tracking
  */
 export async function uploadPetitionWithProgress(
-  petitionData: PetitionData,
+  petitionData: IPFSPetitionData,
   onProgress: (progress: UploadProgress) => void
 ): Promise<PetitionUploadResult> {
   try {
