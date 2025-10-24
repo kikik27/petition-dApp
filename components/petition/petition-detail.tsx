@@ -555,7 +555,7 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
 
               {/* QR Code */}
               <div className="flex justify-center p-4 bg-white rounded-lg">
-                <img
+                <Image
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href)}`}
                   alt="QR Code"
                   width={150}

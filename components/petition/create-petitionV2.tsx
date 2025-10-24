@@ -17,6 +17,7 @@ import { getReadableError, isUserRejected } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "../ui/textarea";
 import { Separator } from "../ui/separator";
+import Image from "next/image";
 import { CheckCircle2, Circle, ChevronRight, ChevronLeft, X, FileText } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
@@ -335,7 +336,7 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
                 />
               ) : (
                 <div className="relative">
-                  <img src={imagePreview} alt="Preview" className="rounded-md w-full h-64 object-cover" />
+                  <Image width={500} height={500} src={imagePreview} alt="Preview" className="rounded-md w-full h-64 object-cover" />
                   <Button
                     type="button"
                     size="icon"
@@ -398,7 +399,9 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground">Cover Image</p>
               <div className="rounded-lg overflow-hidden border">
-                <img
+                <Image
+                  width={500}
+                  height={300}
                   src={imagePreview}
                   alt="Cover preview"
                   className="w-full h-48 object-cover"
