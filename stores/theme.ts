@@ -1,10 +1,14 @@
 import { create } from 'zustand';
 import { IThemeStore } from '@/types/theme';
 
-// Export the zustand hook directly. Components should call useTheme() to access state/actions.
 const useTheme = create<IThemeStore>((set) => ({
   isLoading: false,
+  loadingMessage: '',
+  loadingDescription: '',
+
   setLoading: (loading: boolean) => set({ isLoading: loading }),
+  setLoadingMessage: (message: string) => set({ loadingMessage: message }),
+  setLoadingDescription: (description: string) => set({ loadingDescription: description }),
 }));
 
 export default useTheme;
