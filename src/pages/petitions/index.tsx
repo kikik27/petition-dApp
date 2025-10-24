@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import useTheme from '@/stores/theme';
 import { debugContractConnection } from '@/lib/debug-contract';
-import { testContractRead } from '@/lib/test-contract';
 
 import { usePetitionStore } from '@/stores/petition'
 import { CardPetition } from '@/components/petition/card-petition';

@@ -38,7 +38,7 @@ export interface PetitionUploadResult {
   gatewayUrl: string;
 }
 
-export interface PetitionData {
+export interface IPFSPetitionData {
   title: string;
   description: string;
   richTextContent: string;
