@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { PetitionService } from "@/services/petition";
 import { publicClient } from "@/lib/wagmi-client";
+import { decodeEventLog } from "viem";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -129,6 +130,8 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
         setLoadingMessage("Waiting for Event...");
         setLoadingDescription("Listening to smart contract event PetitionSigned");
 
+        // Strategy 1: Try event watching
+        let eventReceived = false;
         const unwatch = publicClient.watchContractEvent({
           address: CONTRACT_ADDRESS as `0x${string}`,
           abi: CONTRACT_ABI_V2,
@@ -136,6 +139,7 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
           onLogs: async (logs: any[]) => {
             const log = logs[0];
             if (log && log.transactionHash === hash) {
+              eventReceived = true;
               const signatureCount = log.args.signatureCount?.toString();
 
               toast.success("Petition signed successfully!", {
@@ -158,23 +162,104 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
           },
         });
 
-        // Timeout after 30 seconds
-        setTimeout(() => {
-          unwatch();
-          if (waitingForEvent) {
-            toast.warning("Event timeout", {
-              description: "Transaction confirmed but event not received. Please refresh."
-            });
-            setLoading(false);
-            setSigning(false);
-            setWaitingForEvent(false);
+        // Strategy 2: Polling fallback for free tier
+        let pollAttempts = 0;
+        const maxAttempts = 15; // 30 seconds
+        
+        const pollInterval = setInterval(async () => {
+          if (eventReceived) {
+            clearInterval(pollInterval);
+            return;
           }
-        }, 30000);
+
+          pollAttempts++;
+          
+          try {
+            const receipt = await publicClient.getTransactionReceipt({ hash });
+            
+            if (receipt && receipt.status === 'success') {
+              // Find and decode PetitionSigned event
+              for (const log of receipt.logs) {
+                try {
+                  const decoded = decodeEventLog({
+                    abi: CONTRACT_ABI_V2,
+                    data: log.data,
+                    topics: log.topics,
+                  });
+
+                  if (decoded.eventName === 'PetitionSigned') {
+                    const signatureCount = (decoded.args as any).signatureCount?.toString();
+                    
+                    toast.success("Petition signed successfully!", {
+                      description: `Thank you for your support! Total signatures: ${signatureCount}`
+                    });
+
+                    setMessage("");
+                    setLoading(false);
+                    setSigning(false);
+                    setWaitingForEvent(false);
+
+                    // Reload petition and signers
+                    await loadPetition();
+                    if (petition?.id) {
+                      await PetitionService.getSigners(petition.id).then(setSigners);
+                    }
+
+                    clearInterval(pollInterval);
+                    unwatch();
+                    return;
+                  }
+                } catch (decodeError) {
+                  continue;
+                }
+              }
+            }
+          } catch (pollError) {
+            console.log(`Poll attempt ${pollAttempts}:`, pollError);
+          }
+
+          // Timeout
+          if (pollAttempts >= maxAttempts) {
+            clearInterval(pollInterval);
+            unwatch();
+            
+            if (!eventReceived) {
+              toast.success("Signature recorded", {
+                description: "Your signature has been added. Refreshing..."
+              });
+              
+              setMessage("");
+              setLoading(false);
+              setSigning(false);
+              setWaitingForEvent(false);
+
+              // Force reload
+              await loadPetition();
+              if (petition?.id) {
+                await PetitionService.getSigners(petition.id).then(setSigners);
+              }
+            }
+          }
+        }, 2000);
+
       } catch (err) {
         console.error("Error listening for sign event:", err);
+        
+        toast.info("Signature submitted", {
+          description: "Your signature is being processed. Refreshing..."
+        });
+        
         setLoading(false);
         setSigning(false);
         setWaitingForEvent(false);
+        
+        // Force reload after error
+        setTimeout(async () => {
+          await loadPetition();
+          if (petition?.id) {
+            await PetitionService.getSigners(petition.id).then(setSigners);
+          }
+        }, 2000);
       }
     };
 

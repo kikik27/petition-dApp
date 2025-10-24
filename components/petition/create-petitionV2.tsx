@@ -3,6 +3,7 @@ import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { decodeEventLog } from "viem";
 import { toast } from "sonner";
 import { uploadFile, uploadMetadata } from "@/lib/ipfs";
 import { CONTRACT_ABI_V2, CONTRACT_ADDRESS, PetitionCategory } from "@/constants/petition";
@@ -211,6 +212,8 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
         setLoadingMessage("Waiting for Event...");
         setLoadingDescription("Listening to smart contract event PetitionCreated");
 
+        // Strategy 1: Try event watching (may fail on free tier)
+        let eventReceived = false;
         const unwatch = publicClient.watchContractEvent({
           address: CONTRACT_ADDRESS as `0x${string}`,
           abi: CONTRACT_ABI_V2,
@@ -218,6 +221,7 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
           onLogs: (logs: any[]) => {
             const log = logs[0];
             if (log && log.transactionHash === hash) {
+              eventReceived = true;
               const tokenId = log.args.tokenId?.toString();
 
               toast.success("Petition created successfully!", {
@@ -238,23 +242,104 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
           },
         });
 
-        // Timeout after 30 seconds
-        setTimeout(() => {
-          unwatch();
-          if (waitingForEvent) {
-            toast.warning("Event timeout", {
-              description: "Transaction confirmed but event not received. Please refresh."
-            });
-            setLoading(false);
-            setIsSubmitting(false);
-            setWaitingForEvent(false);
+        // Strategy 2: Polling fallback for free tier
+        let pollAttempts = 0;
+        const maxAttempts = 15; // 30 seconds total
+        
+        const pollInterval = setInterval(async () => {
+          if (eventReceived) {
+            clearInterval(pollInterval);
+            return;
           }
-        }, 30000);
+
+          pollAttempts++;
+          
+          try {
+            const receipt = await publicClient.getTransactionReceipt({ hash });
+            
+            if (receipt && receipt.status === 'success') {
+              // Find and decode PetitionCreated event from logs
+              for (const log of receipt.logs) {
+                try {
+                  const decoded = decodeEventLog({
+                    abi: CONTRACT_ABI_V2,
+                    data: log.data,
+                    topics: log.topics,
+                  });
+
+                  if (decoded.eventName === 'PetitionCreated') {
+                    const tokenId = (decoded.args as any).tokenId?.toString();
+                    
+                    toast.success("Petition created successfully!", {
+                      description: `Your petition #${tokenId} is live on blockchain.`
+                    });
+
+                    form.reset();
+                    setParsedTags([]);
+                    setCurrentStep(1);
+                    setImagePreview(null);
+                    setLoading(false);
+                    setIsSubmitting(false);
+                    setWaitingForEvent(false);
+
+                    if (onSuccess && tokenId) onSuccess(tokenId);
+                    
+                    clearInterval(pollInterval);
+                    unwatch();
+                    return;
+                  }
+                } catch (decodeError) {
+                  // Skip logs that don't match
+                  continue;
+                }
+              }
+            }
+          } catch (pollError) {
+            console.log(`Poll attempt ${pollAttempts}:`, pollError);
+          }
+
+          // Timeout after max attempts
+          if (pollAttempts >= maxAttempts) {
+            clearInterval(pollInterval);
+            unwatch();
+            
+            if (!eventReceived) {
+              toast.info("Transaction confirmed", {
+                description: "Your petition has been created. Redirecting..."
+              });
+              
+              // Still reset form and redirect even without event
+              form.reset();
+              setParsedTags([]);
+              setCurrentStep(1);
+              setImagePreview(null);
+              setLoading(false);
+              setIsSubmitting(false);
+              setWaitingForEvent(false);
+              
+              // Redirect to petitions list
+              setTimeout(() => {
+                window.location.href = "/petitions";
+              }, 1500);
+            }
+          }
+        }, 2000); // Poll every 2 seconds
+
       } catch (err) {
-        console.error("Error listening for event:", err);
+        console.error("Error in confirmation process:", err);
+        
+        toast.info("Transaction submitted", {
+          description: "Your petition is being created. Redirecting..."
+        });
+        
         setLoading(false);
         setIsSubmitting(false);
         setWaitingForEvent(false);
+        
+        // Redirect to petitions list
+        setTimeout(() => {
+          window.location.href = "/petitions";
+        }, 2000);
       }
     };
 
