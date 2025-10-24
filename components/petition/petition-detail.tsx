@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { PetitionService } from "@/services/petition";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -71,27 +71,7 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
   //   args: [tokenId],
   // });
   
-  useEffect(() => {
-    loadPetition();
-  }, [tokenId, loadPetition]);
-
-  useEffect(() => {
-    PetitionService.getSigners(BigInt(tokenId)).then(setSigners);
-
-  }, [tokenId]);
-
-  // Auto-slide for signers carousel
-  useEffect(() => {
-    if (signers.length <= 4) return;
-
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % Math.max(1, signers.length - 3));
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [signers.length]);
-
-  async function loadPetition() {
+  const loadPetition = useCallback(async () => {
     try {
       setLoading(true);
       setLoadingMessage("Loading petition...");
@@ -105,7 +85,42 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [setLoading, setLoadingMessage, setLoadingDescription, tokenId]);
+
+  useEffect(() => {
+    loadPetition();
+  }, [loadPetition]);
+
+  useEffect(() => {
+    PetitionService.getSigners(BigInt(tokenId)).then(setSigners);
+  }, [tokenId]);
+
+  // Auto-slide for signers carousel
+  useEffect(() => {
+    if (signers.length <= 4) return;
+
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % Math.max(1, signers.length - 3));
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [signers.length]);
+
+  // async function loadPetition() {
+  //   try {
+  //     setLoading(true);
+  //     setLoadingMessage("Loading petition...");
+  //     setLoadingDescription("Fetching petition details from the blockchain.");
+  //     const data = await PetitionService.getPetitionById(BigInt(tokenId));
+  //     setPetition(data);
+  //   } catch (error) {
+  //     toast.error("Failed to load petition", {
+  //       description: error instanceof Error ? error.message : String(error),
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
 
   async function handleSign() {
     if (!address) {
@@ -407,7 +422,7 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
                     ) : (
                       <>
                         <CheckCircle2 className="w-5 h-5 mr-2" />
-                        Sign Petition
+                    You&apos;ve Signed This!
                       </>
                     )}
                   </Button>
