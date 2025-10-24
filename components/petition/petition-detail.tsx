@@ -179,7 +179,8 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
     };
 
     listenForSignEvent();
-  }, [hash, waitingForEvent, tokenId, loadPetition, setLoading, setLoadingMessage, setLoadingDescription]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hash, waitingForEvent, tokenId, petition.id, loadPetition, setLoading, setLoadingMessage, setLoadingDescription]);
 
   // Handle write errors from smart contract
   useEffect(() => {

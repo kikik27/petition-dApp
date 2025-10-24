@@ -295,7 +295,7 @@ function PetitionList() {
               Oops! Connection Lost
             </h3>
             <p className="text-gray-400 text-base leading-relaxed">
-              We couldn't fetch petitions from the blockchain. This might be due to network issues or contract configuration.
+              We couldn&apos;t fetch petitions from the blockchain. This might be due to network issues or contract configuration.
             </p>
             <p className="text-gray-500 text-sm font-mono bg-gray-800/30 px-4 py-2 rounded-lg border border-gray-700/50">
               {error}

@@ -259,6 +259,7 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
     };
 
     listenForEvent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hash, isSuccess, form, onSuccess, setLoading, waitingForEvent]);
 
   useEffect(() => {
