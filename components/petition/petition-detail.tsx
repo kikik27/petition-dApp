@@ -73,7 +73,7 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
   
   useEffect(() => {
     loadPetition();
-  }, [tokenId]);
+  }, [tokenId, loadPetition]);
 
   useEffect(() => {
     PetitionService.getSigners(BigInt(tokenId)).then(setSigners);
@@ -326,7 +326,7 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
                             </div>
                             {signer.message && (
                               <p className="text-sm text-muted-foreground uppercase line-clamp-2">
-                                "{signer.message}"
+                                {signer.message}
                               </p>
                             )}
                           </CardContent>
@@ -437,7 +437,7 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
                         Reward Available!
                       </p>
                       <p className="text-xs text-muted-foreground text-center mt-1">
-                        {bonus.toString()} tokens
+                        {bonus?.toString()} tokens
                       </p>
                     </div>
                     <Button onClick={claimReward} className="w-full" variant="outline">

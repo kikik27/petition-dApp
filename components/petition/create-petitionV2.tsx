@@ -200,7 +200,7 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
       setLoading(false);
       if (onSuccess) onSuccess(hash);
     }
-  }, [isSuccess, hash]);
+  }, [isSuccess, hash, form, onSuccess, setLoading]);
 
   useEffect(() => {
     if (writeError) {
@@ -211,7 +211,7 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
       setLoadingMessage("Transaction Failed");
       setLoadingDescription(msg);
     }
-  }, [writeError]);
+  }, [writeError, setLoading, setLoadingMessage, setLoadingDescription]);
 
   const isLoading = isPending || isConfirming || isSubmitting;
   const values = form.getValues();
