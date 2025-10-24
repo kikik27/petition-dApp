@@ -245,7 +245,7 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
         // Strategy 2: Polling fallback for free tier
         let pollAttempts = 0;
         const maxAttempts = 15; // 30 seconds total
-        
+
         const pollInterval = setInterval(async () => {
           if (eventReceived) {
             clearInterval(pollInterval);
@@ -253,10 +253,10 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
           }
 
           pollAttempts++;
-          
+
           try {
             const receipt = await publicClient.getTransactionReceipt({ hash });
-            
+
             if (receipt && receipt.status === 'success') {
               // Find and decode PetitionCreated event from logs
               for (const log of receipt.logs) {
@@ -269,7 +269,7 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
 
                   if (decoded.eventName === 'PetitionCreated') {
                     const tokenId = (decoded.args as any).tokenId?.toString();
-                    
+
                     toast.success("Petition created successfully!", {
                       description: `Your petition #${tokenId} is live on blockchain.`
                     });
@@ -283,7 +283,7 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
                     setWaitingForEvent(false);
 
                     if (onSuccess && tokenId) onSuccess(tokenId);
-                    
+
                     clearInterval(pollInterval);
                     unwatch();
                     return;
@@ -302,12 +302,12 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
           if (pollAttempts >= maxAttempts) {
             clearInterval(pollInterval);
             unwatch();
-            
+
             if (!eventReceived) {
               toast.info("Transaction confirmed", {
                 description: "Your petition has been created. Redirecting..."
               });
-              
+
               // Still reset form and redirect even without event
               form.reset();
               setParsedTags([]);
@@ -316,7 +316,7 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
               setLoading(false);
               setIsSubmitting(false);
               setWaitingForEvent(false);
-              
+
               // Redirect to petitions list
               setTimeout(() => {
                 window.location.href = "/petitions";
@@ -327,15 +327,15 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
 
       } catch (err) {
         console.error("Error in confirmation process:", err);
-        
+
         toast.info("Transaction submitted", {
           description: "Your petition is being created. Redirecting..."
         });
-        
+
         setLoading(false);
         setIsSubmitting(false);
         setWaitingForEvent(false);
-        
+
         // Redirect to petitions list
         setTimeout(() => {
           window.location.href = "/petitions";

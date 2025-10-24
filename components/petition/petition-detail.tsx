@@ -165,7 +165,7 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
         // Strategy 2: Polling fallback for free tier
         let pollAttempts = 0;
         const maxAttempts = 15; // 30 seconds
-        
+
         const pollInterval = setInterval(async () => {
           if (eventReceived) {
             clearInterval(pollInterval);
@@ -173,10 +173,10 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
           }
 
           pollAttempts++;
-          
+
           try {
             const receipt = await publicClient.getTransactionReceipt({ hash });
-            
+
             if (receipt && receipt.status === 'success') {
               // Find and decode PetitionSigned event
               for (const log of receipt.logs) {
@@ -189,7 +189,7 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
 
                   if (decoded.eventName === 'PetitionSigned') {
                     const signatureCount = (decoded.args as any).signatureCount?.toString();
-                    
+
                     toast.success("Petition signed successfully!", {
                       description: `Thank you for your support! Total signatures: ${signatureCount}`
                     });
@@ -222,12 +222,12 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
           if (pollAttempts >= maxAttempts) {
             clearInterval(pollInterval);
             unwatch();
-            
+
             if (!eventReceived) {
               toast.success("Signature recorded", {
                 description: "Your signature has been added. Refreshing..."
               });
-              
+
               setMessage("");
               setLoading(false);
               setSigning(false);
@@ -244,15 +244,15 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
 
       } catch (err) {
         console.error("Error listening for sign event:", err);
-        
+
         toast.info("Signature submitted", {
           description: "Your signature is being processed. Refreshing..."
         });
-        
+
         setLoading(false);
         setSigning(false);
         setWaitingForEvent(false);
-        
+
         // Force reload after error
         setTimeout(async () => {
           await loadPetition();
