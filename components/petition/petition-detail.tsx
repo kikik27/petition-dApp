@@ -437,7 +437,7 @@ export default function PetitionDetail({ tokenId }: PetitionDetailProps) {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-green-700 dark:text-green-400 mb-2">
-                    You've Signed This!
+                    You&apos;ve Signed This!
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     Thank you for your support. Share this petition to gather more signatures!
