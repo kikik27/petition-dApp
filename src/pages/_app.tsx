@@ -55,7 +55,7 @@ function MyApp({ Component, pageProps }: AppProps) {
               disableTransitionOnChange>
 
               <main
-                className='min-h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 text-foreground'                    >
+                className='min-h-screen bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 text-foreground overflow-x-hidden'                    >
                 {isLoading && (
                   <>
                     <style jsx global>{`

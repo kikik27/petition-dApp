@@ -10,6 +10,7 @@ import Link from "next/link";
 import { FileText, TrendingUp, Clock, Users, Calendar, CalendarCheck, CalendarX } from "lucide-react";
 
 export const CardPetition = ({ petition }: { petition: PetitionMetadata }) => {
+  console.log(petition.category)
   const categoryInfo = getCategoryInfo(petition.category)
   const stateInfo = getStateInfo(petition.state)
   const Icon = categoryInfo.icon;

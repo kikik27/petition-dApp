@@ -19,9 +19,11 @@ export function getCategoryInfo(categorySearch?: number | string) {
     return CATEGORY_MAP[categorySearch] ?? defaultCategory;
   }
 
-  // Search by category name
+  // Search by category name (support both "Human Rights" and "HUMAN_RIGHTS")
+  const searchLower = categorySearch.toLowerCase().replace(/_/g, ' ');
   const category = Object.values(CATEGORY_MAP).find(
-    cat => cat.label.toLowerCase() === categorySearch.toLowerCase()
+    cat => cat.label.toLowerCase() === searchLower ||
+      cat.label.toLowerCase().replace(/\s+/g, '_') === categorySearch.toLowerCase()
   );
   return category ?? defaultCategory;
 }
