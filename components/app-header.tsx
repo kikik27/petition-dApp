@@ -32,34 +32,34 @@ const AppHeader = () => {
             </div>
           </div>
 
-          {isConnected && (
-            <nav className="hidden md:flex space-x-6 ml-10">
-              <Link
-                href="/petitions"
-                className={`
+
+          <nav className="hidden md:flex space-x-6 ml-10">
+            <Link
+              href="/petitions"
+              className={`
               text-gray-300 hover:text-white relative transition-all duration-300
               ${isActive('/petitions')
-                    ? 'text-light-blue after:bg-blue-500 after:absolute after:bottom-0 after:top-10 after:left-0 after:w-full after:h-1 after:bg-primary-blue after:animate-pulse-glow after:rounded-full after:transition-all after:duration-300'
-                    : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
-                  }
+                  ? 'text-light-blue after:bg-blue-500 after:absolute after:bottom-0 after:top-10 after:left-0 after:w-full after:h-1 after:bg-primary-blue after:animate-pulse-glow after:rounded-full after:transition-all after:duration-300'
+                  : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
+                }
               `}
-              >
-                Petitions
-              </Link>
-              <Link
-                href="/petitions/create"
-                className={`
+            >
+              Petitions
+            </Link>
+            <Link
+              href="/petitions/create"
+              className={`
               text-gray-300 hover:text-white relative transition-all duration-300
               ${isActive('/petitions/create')
-                    ? 'text-light-blue after:bg-blue-500 after:absolute after:bottom-0 after:top-10 after:left-0 after:w-full after:h-1 after:bg-primary-blue after:animate-pulse-glow after:rounded-full after:transition-all after:duration-300'
-                    : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
-                  }
+                  ? 'text-light-blue after:bg-blue-500 after:absolute after:bottom-0 after:top-10 after:left-0 after:w-full after:h-1 after:bg-primary-blue after:animate-pulse-glow after:rounded-full after:transition-all after:duration-300'
+                  : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
+                }
               `}
-              >
-                Create
-              </Link>
-            </nav>
-          )}
+            >
+              Create
+            </Link>
+          </nav>
+
 
           {/* CTA Button */}
           <div className="hidden md:block">
@@ -152,36 +152,36 @@ const AppHeader = () => {
             <div className="space-y-1 border-t border-gray-800 px-2 pb-3 pt-2 sm:px-3">
               <div className="px-3 space-y-4 py-4">
 
-                {isConnected && (
-                  <nav className="flex flex-col space-y-3">
-                    <Link
-                      href="/petitions"
-                      onClick={() => setIsMenuOpen(false)}
-                      className={`
+
+                <nav className="flex flex-col space-y-3">
+                  <Link
+                    href="/petitions"
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`
                         block px-4 py-2 rounded-lg text-base font-medium transition-all duration-300
                         ${isActive('/petitions')
-                          ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-white border border-cyan-500/30'
-                          : 'text-gray-300 hover:text-white hover:bg-gray-800/50'
-                        }
+                        ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-white border border-cyan-500/30'
+                        : 'text-gray-300 hover:text-white hover:bg-gray-800/50'
+                      }
                       `}
-                    >
-                      📋 Petitions
-                    </Link>
-                    <Link
-                      href="/petitions/create"
-                      onClick={() => setIsMenuOpen(false)}
-                      className={`
+                  >
+                    📋 Petitions
+                  </Link>
+                  <Link
+                    href="/petitions/create"
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`
                         block px-4 py-2 rounded-lg text-base font-medium transition-all duration-300
                         ${isActive('/petitions/create')
-                          ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-white border border-cyan-500/30'
-                          : 'text-gray-300 hover:text-white hover:bg-gray-800/50'
-                        }
+                        ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-white border border-cyan-500/30'
+                        : 'text-gray-300 hover:text-white hover:bg-gray-800/50'
+                      }
                       `}
-                    >
-                      ✨ Create Petition
-                    </Link>
-                  </nav>
-                )}
+                  >
+                    ✨ Create Petition
+                  </Link>
+                </nav>
+
 
                 <div className="pt-4 border-t border-gray-800">
                   <ConnectButton.Custom>
