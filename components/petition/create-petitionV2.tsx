@@ -141,7 +141,7 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
       setIsSubmitting(true);
       setLoading(true);
       setLoadingMessage("Creating Petition...");
-      setLoadingDescription("Uploading to IPFS and block chain");
+      setLoadingDescription("Uploading to IPFS and blockchain");
 
       const { gatewayUrl: gatewayUrlImage } = await uploadFile(data.image);
       const documentMetadata =

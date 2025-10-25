@@ -3,10 +3,10 @@ import BADGE_ABI from "@/abi/supportBadge.json";
 import PETITION_ABI_NFT from "@/abi/petitionNFT.json";
 import PETITION_ABI_V2 from "@/abi/petitionV2.json";
 
-import { 
-  Globe2, 
-  HeartHandshake, 
-  Megaphone, 
+import {
+  Globe2,
+  HeartHandshake,
+  Megaphone,
   GraduationCap,
   Heart,
   Scale,
@@ -14,7 +14,12 @@ import {
   TrendingUp,
   Cpu,
   CircleDot,
-  AlertTriangle
+  AlertTriangle,
+  Users,
+  Flag,
+  Leaf,
+  Dog,
+  Palette
 } from "lucide-react";
 
 export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
@@ -42,20 +47,21 @@ export const CONTRACT_ABI_V3 = {
 export const PetitionCategory = [
   'SOCIAL', 'POLITICAL', 'ENVIRONMENTAL', 'EDUCATION',
   'HEALTH', 'HUMAN_RIGHTS', 'ANIMAL_RIGHTS', 'ECONOMIC',
-  'TECHNOLOGY', 'OTHER'
+  'TECHNOLOGY', 'CULTURAL', 'OTHER'
 ];
 
 export const CATEGORY_MAP: Record<number, { label: string; color: string; icon: any }> = {
-  0: { label: "Social", color: "bg-blue-500/20 text-blue-400 text-sm", icon: HeartHandshake },
-  1: { label: "Political", color: "bg-red-500/20 text-red-400 text-sm", icon: Megaphone },
-  2: { label: "Environmental", color: "bg-emerald-500/20 text-emerald-400 text-sm", icon: Globe2 },
-  3: { label: "Education", color: "bg-amber-500/20 text-amber-400 text-sm", icon: Megaphone },
-  4: { label: "Health", color: "bg-rose-500/20 text-rose-400 text-sm", icon: HeartHandshake },
-  5: { label: "Human Rights", color: "bg-violet-500/20 text-violet-400 text-sm", icon: HeartHandshake },
-  6: { label: "Animal Rights", color: "bg-orange-500/20 text-orange-400 text-sm", icon: HeartHandshake },
-  7: { label: "Economic", color: "bg-cyan-500/20 text-cyan-400 text-sm", icon: AlertTriangle },
-  8: { label: "Technology", color: "bg-indigo-500/20 text-indigo-400 text-sm", icon: Megaphone },
-  9: { label: "Other", color: "bg-slate-500/20 text-slate-400 text-sm", icon: AlertTriangle },
+  0: { label: "Social", color: "bg-blue-500/20 text-blue-400 text-sm", icon: Users },
+  1: { label: "Political", color: "bg-red-500/20 text-red-400 text-sm", icon: Flag },
+  2: { label: "Environmental", color: "bg-emerald-500/20 text-emerald-400 text-sm", icon: Leaf },
+  3: { label: "Education", color: "bg-amber-500/20 text-amber-400 text-sm", icon: GraduationCap },
+  4: { label: "Health", color: "bg-rose-500/20 text-rose-400 text-sm", icon: Heart },
+  5: { label: "Human Rights", color: "bg-violet-500/20 text-violet-400 text-sm", icon: Scale },
+  6: { label: "Animal Rights", color: "bg-orange-500/20 text-orange-400 text-sm", icon: Dog },
+  7: { label: "Economic", color: "bg-cyan-500/20 text-cyan-400 text-sm", icon: TrendingUp },
+  8: { label: "Technology", color: "bg-indigo-500/20 text-indigo-400 text-sm", icon: Cpu },
+  9: { label: "Cultural", color: "bg-pink-500/20 text-pink-400 text-sm", icon: Palette },
+  10: { label: "Other", color: "bg-slate-500/20 text-slate-400 text-sm", icon: Globe2 },
 };
 
 export const STATE_MAP: Record<number, { label: string; color: string }> = {

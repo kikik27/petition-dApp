@@ -12,6 +12,7 @@ export type PetitionCategory =
   | "ANIMAL_RIGHTS"
   | "ECONOMIC"
   | "TECHNOLOGY"
+  | "CULTURAL"
   | "OTHER";
 
 /**

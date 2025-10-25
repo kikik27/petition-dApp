@@ -32,34 +32,34 @@ const AppHeader = () => {
             </div>
           </div>
 
-            {isConnected && (
+          {isConnected && (
             <nav className="hidden md:flex space-x-6 ml-10">
               <Link
-              href="/petitions"
-              className={`
+                href="/petitions"
+                className={`
               text-gray-300 hover:text-white relative transition-all duration-300
               ${isActive('/petitions')
-                ? 'text-light-blue after:bg-blue-500 after:absolute after:bottom-0 after:top-10 after:left-0 after:w-full after:h-1 after:bg-primary-blue after:animate-pulse-glow after:rounded-full after:transition-all after:duration-300'
-                : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
-                }
+                    ? 'text-light-blue after:bg-blue-500 after:absolute after:bottom-0 after:top-10 after:left-0 after:w-full after:h-1 after:bg-primary-blue after:animate-pulse-glow after:rounded-full after:transition-all after:duration-300'
+                    : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
+                  }
               `}
               >
-              Petitions
+                Petitions
               </Link>
               <Link
-              href="/petitions/create"
-              className={`
+                href="/petitions/create"
+                className={`
               text-gray-300 hover:text-white relative transition-all duration-300
               ${isActive('/petitions/create')
-                ? 'text-light-blue after:bg-blue-500 after:absolute after:bottom-0 after:top-10 after:left-0 after:w-full after:h-1 after:bg-primary-blue after:animate-pulse-glow after:rounded-full after:transition-all after:duration-300'
-                : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
-                }
+                    ? 'text-light-blue after:bg-blue-500 after:absolute after:bottom-0 after:top-10 after:left-0 after:w-full after:h-1 after:bg-primary-blue after:animate-pulse-glow after:rounded-full after:transition-all after:duration-300'
+                    : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
+                  }
               `}
               >
-              Create
+                Create
               </Link>
             </nav>
-            )}
+          )}
 
           {/* CTA Button */}
           <div className="hidden md:block">
@@ -149,107 +149,113 @@ const AppHeader = () => {
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden">
-            <div className="space-y-1 border-t border-gray-800 px-2 pb-3 pt-2 sm:px-3 block py-2 text-gray-300 hover:text-white">
-              <div className="px-3 space-y-4 py-2">
+            <div className="space-y-1 border-t border-gray-800 px-2 pb-3 pt-2 sm:px-3">
+              <div className="px-3 space-y-4 py-4">
 
                 {isConnected && (
-                  <nav className="hidden md:flex space-x-6 ml-10">
+                  <nav className="flex flex-col space-y-3">
                     <Link
                       href="/petitions"
+                      onClick={() => setIsMenuOpen(false)}
                       className={`
-                text-gray-300 hover:text-white relative transition-all duration-300
-                ${isActive('/petitions')
-                          ? 'text-light-blue after:bg-blue-500 after:absolute after:bottom-0 after:top-10 after:left-0 after:w-full after:h-1 after:bg-primary-blue after:animate-pulse-glow after:rounded-full after:transition-all after:duration-300'
-                          : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
+                        block px-4 py-2 rounded-lg text-base font-medium transition-all duration-300
+                        ${isActive('/petitions')
+                          ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-white border border-cyan-500/30'
+                          : 'text-gray-300 hover:text-white hover:bg-gray-800/50'
                         }
-              `}
+                      `}
                     >
-                      Petitions
+                      📋 Petitions
                     </Link>
                     <Link
                       href="/petitions/create"
+                      onClick={() => setIsMenuOpen(false)}
                       className={`
-                text-gray-300 hover:text-white relative transition-all duration-300
-                ${isActive('/petitions/create')
-                          ? 'text-light-blue after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary-blue after:shadow-glow-blue after:rounded-full after:transition-all after:duration-300'
-                          : 'after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-primary-blue after:transition-all after:duration-300 hover:after:w-full'
+                        block px-4 py-2 rounded-lg text-base font-medium transition-all duration-300
+                        ${isActive('/petitions/create')
+                          ? 'bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-white border border-cyan-500/30'
+                          : 'text-gray-300 hover:text-white hover:bg-gray-800/50'
                         }
-              `}
+                      `}
                     >
-                      Create
+                      ✨ Create Petition
                     </Link>
                   </nav>
                 )}
 
-                <ConnectButton.Custom>
-                  {
-                    ({
-                      account,
-                      chain,
-                      openAccountModal,
-                      openChainModal,
-                      openConnectModal,
-                      authenticationStatus,
-                      mounted,
-                    }) => {
-                      // Note: If your app doesn't use authentication, you
-                      // can remove all 'authenticationStatus' checks
-                      const ready = mounted && authenticationStatus !== 'loading';
-                      const connected =
-                        ready &&
-                        account &&
-                        chain &&
-                        (!authenticationStatus ||
-                          authenticationStatus === 'authenticated');
+                <div className="pt-4 border-t border-gray-800">
+                  <ConnectButton.Custom>
+                    {
+                      ({
+                        account,
+                        chain,
+                        openAccountModal,
+                        openChainModal,
+                        openConnectModal,
+                        authenticationStatus,
+                        mounted,
+                      }) => {
+                        const ready = mounted && authenticationStatus !== 'loading';
+                        const connected =
+                          ready &&
+                          account &&
+                          chain &&
+                          (!authenticationStatus ||
+                            authenticationStatus === 'authenticated');
 
-                      return (
-                        <div
-                          {...(!ready && {
-                            'aria-hidden': true,
-                            'style': {
-                              opacity: 0,
-                              pointerEvents: 'none',
-                              userSelect: 'none',
-                            },
-                          })}
-                        >
-                          {(() => {
-                            if (!connected) {
+                        return (
+                          <div
+                            {...(!ready && {
+                              'aria-hidden': true,
+                              'style': {
+                                opacity: 0,
+                                pointerEvents: 'none',
+                                userSelect: 'none',
+                              },
+                            })}
+                          >
+                            {(() => {
+                              if (!connected) {
+                                return (
+                                  <Button className="w-full bg-gray-50/7 hover:bg-gray-50/3 p-4 border text-white" onClick={openConnectModal} type="button">
+                                    Connect Wallet
+                                  </Button>
+                                );
+                              }
+
+                              if (chain.unsupported) {
+                                return (
+                                  <Button className="w-full bg-red-600 text-white hover:bg-red-700" onClick={openChainModal} type="button">
+                                    Wrong network
+                                  </Button>
+                                );
+                              }
+
                               return (
-                                <Button className="bg-gray-50/7 hover:bg-gray-50/3 p-4 border text-white" onClick={openConnectModal} type="button">
-                                  Connect Wallet
+                                <Button className="w-full bg-gray-50/7 hover:bg-gray-50/3 p-4 border text-white justify-start" onClick={openAccountModal} type="button">
+                                  {chain.iconUrl && (
+                                    <Image
+                                      alt={chain.name ?? 'Chain icon'}
+                                      src={chain.iconUrl}
+                                      width={18}
+                                      height={18}
+                                      className="mr-2"
+                                    />
+                                  )}
+                                  <span className="truncate">
+                                    {account.displayName}
+                                    {account.displayBalance
+                                      ? ` (${account.displayBalance})`
+                                      : ''}
+                                  </span>
                                 </Button>
                               );
-                            }
-
-                            if (chain.unsupported) {
-                              return (
-                                <Button className="bg-red-600 text-white hover:bg-red-700" onClick={openChainModal} type="button">
-                                  Wrong network
-                                </Button>
-                              );
-                            }
-
-                            return (
-                              <Button className="bg-gray-50/7 hover:bg-gray-50/3 p-4 border text-white" onClick={openAccountModal} type="button">
-                                {chain.iconUrl && (
-                                  <Image
-                                    alt={chain.name ?? 'Chain icon'}
-                                    src={chain.iconUrl}
-                                    width={18}
-                                    height={18}
-                                  />
-                                )}{account.displayName}
-                                {account.displayBalance
-                                  ? ` (${account.displayBalance})`
-                                  : ''}
-                              </Button>
-                            );
-                          })()}
-                        </div>
-                      );
-                    }}
-                </ConnectButton.Custom>
+                            })()}
+                          </div>
+                        );
+                      }}
+                  </ConnectButton.Custom>
+                </div>
               </div>
             </div>
           </div>

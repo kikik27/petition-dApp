@@ -175,6 +175,7 @@ function CategoryFilter() {
     { value: 'ANIMAL_RIGHTS', label: 'Animal Rights' },
     { value: 'ECONOMIC', label: 'Economic' },
     { value: 'TECHNOLOGY', label: 'Technology' },
+    { value: 'CULTURAL', label: 'Cultural' },
     { value: 'OTHER', label: 'Other' },
   ];
 

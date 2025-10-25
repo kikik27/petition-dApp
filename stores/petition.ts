@@ -38,8 +38,8 @@ export const usePetitionStore = create<IPetitionStore>((set, get) => ({
   fetchPetitionsByCategory: async (category: PetitionCategory) => {
     try {
       set({ loading: true, error: null });
-      
-      // Convert category string to number (0-9)
+
+      // Convert category string to number (0-10)
       const categoryMap: Record<PetitionCategory, number> = {
         'SOCIAL': 0,
         'POLITICAL': 1,
@@ -50,7 +50,8 @@ export const usePetitionStore = create<IPetitionStore>((set, get) => ({
         'ANIMAL_RIGHTS': 6,
         'ECONOMIC': 7,
         'TECHNOLOGY': 8,
-        'OTHER': 9,
+        'CULTURAL': 9,
+        'OTHER': 10,
       };
 
       const categoryNumber = categoryMap[category];

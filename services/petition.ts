@@ -122,6 +122,7 @@ export const PetitionService = {
       "ANIMAL_RIGHTS",
       "ECONOMIC",
       "TECHNOLOGY",
+      "CULTURAL",
       "OTHER",
     ];
 
