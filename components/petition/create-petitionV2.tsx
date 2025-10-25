@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { useWaitForTransactionReceipt, useWriteContract, useAccount } from "wagmi";
 import { decodeEventLog } from "viem";
 import { toast } from "sonner";
 import { uploadFile, uploadMetadata } from "@/lib/ipfs";
@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "../ui/textarea";
 import { Separator } from "../ui/separator";
 import Image from "next/image";
-import { CheckCircle2, Circle, ChevronRight, ChevronLeft, X, FileText } from "lucide-react";
+import { CheckCircle2, Circle, ChevronRight, ChevronLeft, X, FileText, Wallet } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { ConfirmDialog } from "../global/custom-confirmDialog";
 
@@ -75,6 +75,7 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirm, setisConfirm] = useState(false);
 
+  const { address, isConnected } = useAccount();
   const { writeContract, data: hash, isPending, error: writeError } = useWriteContract();
   const { isSuccess, isLoading: isConfirming } = useWaitForTransactionReceipt({ hash });
   const [waitingForEvent, setWaitingForEvent] = useState(false);
@@ -137,6 +138,15 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
 
   const handlePublish = async (data: PetitionFormValues) => {
     setisConfirm(false);
+
+    // Double-check wallet connection
+    if (!isConnected || !address) {
+      toast.error("Wallet Not Connected", {
+        description: "Please connect your wallet to create a petition."
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       setLoading(true);
@@ -485,6 +495,7 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
           name="image"
           label="Upload Cover Image (Max 500KB)"
           control={form.control}
+          primary
           render={({ field: { value, onChange } }) => (
             <div className="space-y-3">
               {!imagePreview ? (
@@ -661,6 +672,22 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
           <CardTitle>Create New Petition</CardTitle>
           <CardDescription>Complete all steps to publish your petition.</CardDescription>
         </CardHeader>
+
+        {/* Wallet Not Connected Warning */}
+        {!isConnected && (
+          <div className="mx-6 mb-4 p-4 rounded-lg border-2 border-yellow-500/50 bg-yellow-500/10">
+            <div className="flex items-start gap-3">
+              <Wallet className="w-5 h-5 text-yellow-500 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="font-semibold text-yellow-500 mb-1">Wallet Not Connected</h4>
+                <p className="text-sm text-muted-foreground">
+                  You need to connect your wallet before creating a petition. Please connect your wallet using the button in the header.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="px-6">
           <div className="flex items-center justify-between">
             {STEPS.map((s, i) => (
@@ -695,10 +722,16 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
                 if (currentStep < STEPS.length) {
                   handleNext();
                 } else {
+                  if (!isConnected) {
+                    toast.error("Wallet Required", {
+                      description: "Please connect your wallet before publishing your petition."
+                    });
+                    return;
+                  }
                   setisConfirm(true);
                 }
               }}
-              disabled={isLoading}
+              disabled={isLoading || (currentStep === STEPS.length && !isConnected)}
             >
               {currentStep < STEPS.length ? (
                 <>
@@ -706,6 +739,10 @@ const CreatePetitionFormV2 = ({ onSuccess }: { onSuccess?: (tokenId: string) => 
                 </>
               ) : isLoading ? (
                 "Processing..."
+              ) : !isConnected ? (
+                <>
+                  <Wallet className="w-4 h-4 mr-2" /> Connect Wallet First
+                </>
               ) : (
                 "Publish Petition 🚀"
               )}
